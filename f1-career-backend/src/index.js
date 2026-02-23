@@ -29,8 +29,8 @@ async function start() {
     await sequelize.authenticate();
     console.log('✅ Database connected');
     // For day 1: sync models. In production use migrations later.
-    await sequelize.sync({ alter: true }); // alter=true for dev convenience
-    console.log('✅ Models synced');
+    // await sequelize.sync({ alter: true }); 
+    // console.log('✅ Models synced');
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
