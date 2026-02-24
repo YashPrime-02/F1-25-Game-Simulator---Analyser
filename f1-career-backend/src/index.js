@@ -1,24 +1,38 @@
 // src/index.js
 require('dotenv').config();
-require('express-async-errors'); // to allow throwing errors in async handlers
+require('express-async-errors');
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 
-const { sequelize } = require('./models');
+// 🔎 DEBUG: check which models file is actually loaded
+const models = require('./models');
+console.log('LOADED MODELS PATH:', require.resolve('./models'));
+console.log('MODELS KEYS:', Object.keys(models));
+
+const { sequelize } = models;
+
 const authRoutes = require('./routes/auth');
+const careerRoutes = require('./routes/careers');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 
 const app = express();
+
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
+// Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/careers', careerRoutes);
 
-// health
-app.get('/health', (req, res) => res.json({ ok: true, time: new Date() }));
+// Health check
+app.get('/health', (req, res) =>
+  res.json({ ok: true, time: new Date() })
+);
 
+// Error handlers
 app.use(notFound);
 app.use(errorHandler);
 
@@ -28,9 +42,6 @@ async function start() {
   try {
     await sequelize.authenticate();
     console.log('✅ Database connected');
-    // For day 1: sync models. In production use migrations later.
-    // await sequelize.sync({ alter: true }); 
-    // console.log('✅ Models synced');
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
