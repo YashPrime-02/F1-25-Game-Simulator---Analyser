@@ -5,6 +5,8 @@ require('express-async-errors');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const seasonRoutes = require('./routes/seasons');
+const raceRoutes = require('./routes/races');
 
 // 🔎 DEBUG: check which models file is actually loaded
 const models = require('./models');
@@ -26,6 +28,8 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/careers', careerRoutes);
+app.use('/api/seasons', seasonRoutes);
+app.use('/api/races', raceRoutes);
 
 // Health check
 app.get('/health', (req, res) =>

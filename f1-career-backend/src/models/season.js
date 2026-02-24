@@ -17,9 +17,18 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
-      calendarLength: {
+      year: {
         type: DataTypes.INTEGER,
         allowNull: false,
+      },
+      raceCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      status: {
+        type: DataTypes.STRING(50),
+        allowNull: false,
+        defaultValue: 'active',
       },
     },
     {

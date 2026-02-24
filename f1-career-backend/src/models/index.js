@@ -13,17 +13,82 @@ const sequelize = new Sequelize(DATABASE_URL, {
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
 });
 
-// 🔥 Import models
+// ==========================
+// MODEL IMPORTS
+// ==========================
+
 const User = require('./user')(sequelize, DataTypes);
 const Career = require('./career')(sequelize, DataTypes);
 const Season = require('./season')(sequelize, DataTypes);
 const SeasonCalendar = require('./seasonCalendar')(sequelize, DataTypes);
+const RaceWeekend = require('./raceWeekend')(sequelize, DataTypes);
+const RaceResult = require('./raceResult')(sequelize, DataTypes);
+const Driver = require('./driver')(sequelize, DataTypes);
+const Team = require('./team')(sequelize, DataTypes);
+const SeasonMemory = require('./seasonMemory')(sequelize, DataTypes);
+const NewsFeed = require('./newsFeed')(sequelize, DataTypes); // ✅ ADDED
 
-// Optional: confirm registration during dev
-console.log(
-  'Models loaded:',
-  Object.keys({ User, Career, Season, SeasonCalendar })
-);
+// ==========================
+// ASSOCIATIONS
+// ==========================
+
+// Career ↔ Season
+Career.hasMany(Season, { foreignKey: 'careerId' });
+Season.belongsTo(Career, { foreignKey: 'careerId' });
+
+// Season ↔ SeasonCalendar
+Season.hasMany(SeasonCalendar, { foreignKey: 'seasonId' });
+SeasonCalendar.belongsTo(Season, { foreignKey: 'seasonId' });
+
+// Season ↔ RaceWeekend
+Season.hasMany(RaceWeekend, { foreignKey: 'seasonId' });
+RaceWeekend.belongsTo(Season, { foreignKey: 'seasonId' });
+
+// RaceWeekend ↔ RaceResult
+RaceWeekend.hasMany(RaceResult, { foreignKey: 'raceWeekendId' });
+RaceResult.belongsTo(RaceWeekend, { foreignKey: 'raceWeekendId' });
+
+// Driver ↔ RaceResult
+Driver.hasMany(RaceResult, { foreignKey: 'driverId' });
+RaceResult.belongsTo(Driver, { foreignKey: 'driverId' });
+
+// Team ↔ Driver
+Team.hasMany(Driver, { foreignKey: 'teamId' });
+Driver.belongsTo(Team, { foreignKey: 'teamId' });
+
+// Season ↔ SeasonMemory  ✅ ADDED
+Season.hasMany(SeasonMemory, { foreignKey: 'seasonId' });
+SeasonMemory.belongsTo(Season, { foreignKey: 'seasonId' });
+
+// Season ↔ NewsFeed  ✅ ADDED
+Season.hasMany(NewsFeed, { foreignKey: 'seasonId' });
+NewsFeed.belongsTo(Season, { foreignKey: 'seasonId' });
+
+// ==========================
+// DEBUG (DEV ONLY)
+// ==========================
+
+if (process.env.NODE_ENV === 'development') {
+  console.log(
+    'Models loaded:',
+    Object.keys({
+      User,
+      Career,
+      Season,
+      SeasonCalendar,
+      RaceWeekend,
+      RaceResult,
+      Driver,
+      Team,
+      SeasonMemory,
+      NewsFeed, // ✅ now visible
+    })
+  );
+}
+
+// ==========================
+// EXPORT
+// ==========================
 
 module.exports = {
   sequelize,
@@ -32,4 +97,10 @@ module.exports = {
   Career,
   Season,
   SeasonCalendar,
+  RaceWeekend,
+  RaceResult,
+  Driver,
+  Team,
+  SeasonMemory, 
+  NewsFeed,     
 };
