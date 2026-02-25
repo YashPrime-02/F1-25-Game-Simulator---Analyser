@@ -1,13 +1,11 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
-
 import AuthPage from "./pages/Auth/AuthPage";
 import ModeSelect from "./pages/ModeSelect/ModeSelect";
-
+import RaceControl from "./pages/RaceControl/RaceControl";
 import MainLayout from "./layouts/MainLayout";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Standings from "./pages/Standings/Standings";
-import RaceCenter from "./pages/RaceCenter/RaceCenter";
 import Drivers from "./pages/Drivers/Drivers";
 import News from "./pages/News/News";
 import F1Background from "./components/background/F1Background";
@@ -50,9 +48,9 @@ function App() {
           >
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/standings" element={<Standings />} />
-            <Route path="/race" element={<RaceCenter />} />
             <Route path="/drivers" element={<Drivers />} />
             <Route path="/news" element={<News />} />
+            <Route path="/dashboard/race-control" element={<RaceControl />} />
           </Route>
         </Routes>
       </BrowserRouter>

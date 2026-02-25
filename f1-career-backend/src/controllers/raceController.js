@@ -250,83 +250,84 @@ exports.getSeasonProgression = async (req, res) => {
    RACE RECAP AI
 ========================================================= */
 exports.getRaceRecapAI = async (req, res) => {
-  const { raceWeekendId } = req.params;
+  try {
+    const { raceWeekendId } = req.params;
 
-  const race = await RaceWeekend.findByPk(raceWeekendId);
-  if (!race)
-    return res.status(404).json({ message: 'Race weekend not found' });
+    const race = await RaceWeekend.findByPk(raceWeekendId);
+    if (!race)
+      return res.status(404).json({ message: 'Race weekend not found' });
 
-  const season = await Season.findByPk(race.seasonId);
-  if (!season)
-    return res.status(404).json({ message: 'Season not found' });
+    const season = await Season.findByPk(race.seasonId);
+    if (!season)
+      return res.status(404).json({ message: 'Season not found' });
 
-  const results = await RaceResult.findAll({
-    where: { raceWeekendId },
-    include: [{ model: Driver, include: [Team] }],
-    order: [['position', 'ASC']],
-  });
+    const results = await RaceResult.findAll({
+      where: { raceWeekendId },
+      include: [{ model: Driver, include: [Team] }],
+      order: [['position', 'ASC']],
+    });
 
-  if (!results.length)
-    return res.status(400).json({ message: 'No race results found' });
+    if (!results.length)
+      return res.status(400).json({ message: 'No race results found' });
 
-  const standings = await calculateDriverStandings(season.id);
-  if (!standings?.length)
-    return res.status(400).json({ message: 'Standings unavailable' });
+    const standings = await calculateDriverStandings(season.id);
+    if (!standings?.length)
+      return res.status(400).json({ message: 'Standings unavailable' });
 
-  const leader = standings[0];
-  const p2 = standings[1];
-  const gap = p2 ? leader.totalPoints - p2.totalPoints : 0;
+    const leader = standings[0];
+    const p2 = standings[1];
+    const gap = p2 ? leader.totalPoints - p2.totalPoints : 0;
 
-  const previousMemories = await SeasonMemory.findAll({
-    where: { seasonId: season.id },
-    order: [['roundNumber', 'ASC']],
-    limit: 5,
-  });
+    const previousMemories = await SeasonMemory.findAll({
+      where: { seasonId: season.id },
+      order: [['roundNumber', 'ASC']],
+      limit: 5,
+    });
 
-  const memoryContext = previousMemories
-    .map((m) => `Round ${m.roundNumber}: ${m.summary}`)
-    .join(' ');
+    const memoryContext = previousMemories
+      .map((m) => `Round ${m.roundNumber}: ${m.summary}`)
+      .join(' ');
 
-  const rivalry = detectRivalry(standings);
-  const titleStatus = await detectTitleClinch(season, race.roundNumber);
-  const controversy = detectControversy(results);
-  const politicalTension = detectTeamTension(standings);
-  const transferRumors = generateTransferRumorContext(
-    standings,
-    race.roundNumber,
-    season.raceCount
-  );
-
-  const winner = results.find((r) => r.position === 1);
-  if (!winner)
-    return res.status(400).json({ message: 'Winner not found' });
-
-  const personality = getDriverPersonality(winner.driverId);
-  const winnerMorale = winner.Driver?.morale ?? 50;
-
-  const winnerName = `${winner.Driver.firstName} ${winner.Driver.lastName}`;
-  const winnerTeam = winner.Driver.Team?.name || 'Unknown';
-
-  const podium = results
-    .filter((r) => r.position <= 3)
-    .map(
-      (r) =>
-        `${r.Driver.firstName} ${r.Driver.lastName} (${r.Driver.Team?.name || 'Unknown'})`
+    const rivalry = detectRivalry(standings);
+    const titleStatus = await detectTitleClinch(season, race.roundNumber);
+    const controversy = detectControversy(results);
+    const politicalTension = detectTeamTension(standings);
+    const transferRumors = generateTransferRumorContext(
+      standings,
+      race.roundNumber,
+      season.raceCount
     );
 
-  const fastestLap = results.find((r) => r.fastestLap === true);
-  const fastestLapText = fastestLap
-    ? `${fastestLap.Driver.firstName} ${fastestLap.Driver.lastName}`
-    : 'None';
+    const winner = results.find((r) => r.position === 1);
+    if (!winner)
+      return res.status(400).json({ message: 'Winner not found' });
 
-  const dnfCount = results.filter((r) => r.dnf === true).length;
+    const personality = getDriverPersonality(winner.driverId);
+    const winnerMorale = winner.Driver?.morale ?? 50;
 
-  const leaderDriver = await Driver.findByPk(leader.driverId);
-  const leaderName = leaderDriver
-    ? `${leaderDriver.firstName} ${leaderDriver.lastName}`
-    : 'Unknown';
+    const winnerName = `${winner.Driver.firstName} ${winner.Driver.lastName}`;
+    const winnerTeam = winner.Driver.Team?.name || 'Unknown';
 
-  const prompt = `
+    const podium = results
+      .filter((r) => r.position <= 3)
+      .map(
+        (r) =>
+          `${r.Driver.firstName} ${r.Driver.lastName} (${r.Driver.Team?.name || 'Unknown'})`
+      );
+
+    const fastestLap = results.find((r) => r.fastestLap === true);
+    const fastestLapText = fastestLap
+      ? `${fastestLap.Driver.firstName} ${fastestLap.Driver.lastName}`
+      : 'None';
+
+    const dnfCount = results.filter((r) => r.dnf === true).length;
+
+    const leaderDriver = await Driver.findByPk(leader.driverId);
+    const leaderName = leaderDriver
+      ? `${leaderDriver.firstName} ${leaderDriver.lastName}`
+      : 'Unknown';
+
+    const prompt = `
 You are a serious professional Formula 1 commentator.
 STRICT RULES:
 - Use only provided data.
@@ -360,7 +361,6 @@ Transfer Rumors: ${transferRumors?.message || 'None'}
 Generate dramatic but realistic recap.
 `;
 
-  try {
     let narrative = await generateAIText(prompt);
     narrative = narrative.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
 
@@ -398,12 +398,12 @@ Gap: ${gap}
         titleClinched: titleStatus.clinched,
       },
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'AI recap failed' });
   }
 };
-
 /* =========================================================
    CONSTRUCTOR STANDINGS
 ========================================================= */
@@ -457,57 +457,6 @@ exports.getConstructorStandings = async (req, res) => {
 };
 
 
-/* =========================================================
-   CONSTRUCTOR STANDINGS
-========================================================= */
-exports.getConstructorStandings = async (req, res) => {
-  const { seasonId } = req.params;
-
-  const raceWeekends = await RaceWeekend.findAll({ where: { seasonId } });
-  const raceIds = raceWeekends.map((r) => r.id);
-
-  const results = await RaceResult.findAll({
-    where: { raceWeekendId: raceIds },
-  });
-
-  const drivers = await Driver.findAll();
-  const teams = await Team.findAll();
-
-  const driverTeamMap = {};
-  drivers.forEach((d) => (driverTeamMap[d.id] = d.teamId));
-
-  const teamMap = {};
-  teams.forEach((t) => (teamMap[t.id] = t.name));
-
-  const constructorTable = {};
-
-  results.forEach((r) => {
-    const teamId = driverTeamMap[r.driverId];
-    if (!teamId) return;
-
-    if (!constructorTable[teamId]) {
-      constructorTable[teamId] = {
-        teamId,
-        teamName: teamMap[teamId] || 'Unknown',
-        totalPoints: 0,
-        wins: 0,
-      };
-    }
-
-    let points = POINTS_MAP[r.position] || 0;
-    if (r.fastestLap && r.position <= 10) points += 1;
-
-    constructorTable[teamId].totalPoints += points;
-
-    if (r.position === 1) constructorTable[teamId].wins += 1;
-  });
-
-  const sorted = Object.values(constructorTable).sort(
-    (a, b) => b.totalPoints - a.totalPoints
-  );
-
-  res.json(sorted);
-};
 
 /* =========================================================
    RACE RECAP DATA (NON-AI)
@@ -557,19 +506,29 @@ exports.getRaceRecapData = async (req, res) => {
    SIMULATE RACE
 ========================================================= */
 
+/* =========================================================
+   SIMULATE FULL RACE (ENGINE)
+========================================================= */
 exports.simulateRace = async (req, res) => {
   try {
-    const { raceWeekendId } = req.params;
+    const { seasonId, roundNumber } = req.body;
 
-    const race = await RaceWeekend.findByPk(raceWeekendId);
-    if (!race)
-      return res.status(404).json({ message: "Race not found" });
+    if (!seasonId || !roundNumber) {
+      return res.status(400).json({
+        message: "seasonId and roundNumber required",
+      });
+    }
 
-    const existingResults = await RaceResult.findAll({
-      where: { raceWeekendId },
+    const season = await Season.findByPk(seasonId);
+    if (!season)
+      return res.status(404).json({ message: "Season not found" });
+
+    // Check duplicate round
+    const existing = await RaceWeekend.findOne({
+      where: { seasonId, roundNumber },
     });
 
-    if (existingResults.length > 0) {
+    if (existing) {
       return res.status(400).json({
         message: "Race already simulated",
       });
@@ -587,28 +546,48 @@ exports.simulateRace = async (req, res) => {
 
     const shuffled = shuffleArray(drivers);
 
-    const generatedResults = shuffled.map((driver, index) => ({
-      driverId: driver.id,
-      position: index + 1,
-      fastestLap: index === Math.floor(Math.random() * 10), // random top 10
-      dnf: false,
-    }));
+    const transaction = await sequelize.transaction();
 
-    // Reuse existing submit logic internally
-    await RaceResult.bulkCreate(
-      generatedResults.map((r) => ({
-        raceWeekendId,
-        ...r,
-      }))
-    );
+    try {
+      // Create weekend first
+      const raceWeekend = await RaceWeekend.create(
+        {
+          seasonId,
+          roundNumber,
+          weather: "Dry",
+          safetyCar: false,
+          redFlag: false,
+        },
+        { transaction }
+      );
 
-    // Update morale
-    await updateMoraleAfterRace(generatedResults, Driver);
+      const generatedResults = shuffled.map((driver, index) => ({
+        raceWeekendId: raceWeekend.id,
+        driverId: driver.id,
+        position: index + 1,
+        fastestLap:
+          index === Math.floor(Math.random() * 10), // random in top 10
+        dnf: false,
+      }));
 
-    res.json({
-      message: "Race simulated successfully",
-      results: generatedResults,
-    });
+      await RaceResult.bulkCreate(generatedResults, {
+        transaction,
+      });
+
+      await updateMoraleAfterRace(generatedResults, Driver);
+
+      await transaction.commit();
+
+      res.status(201).json({
+        message: "Race simulated successfully",
+        raceWeekendId: raceWeekend.id,
+      });
+
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
+
   } catch (error) {
     console.error("simulateRace error:", error);
     res.status(500).json({ message: "Simulation failed" });

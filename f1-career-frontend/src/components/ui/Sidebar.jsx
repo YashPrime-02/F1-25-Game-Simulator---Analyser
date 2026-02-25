@@ -29,7 +29,7 @@ function Sidebar() {
       <nav>
         <NavLink to="/dashboard">Dashboard</NavLink>
         <NavLink to="/standings">Standings</NavLink>
-        <NavLink to="/race">Race Center</NavLink>
+        <NavLink to="/dashboard/race-control">Race Center</NavLink>
         <NavLink to="/drivers">Drivers</NavLink>
         <NavLink to="/news">News</NavLink>
       </nav>
