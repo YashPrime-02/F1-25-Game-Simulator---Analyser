@@ -187,3 +187,34 @@ exports.completeSeason = async (req, res) => {
 };
 
 
+exports.getActiveSeason = async (req, res) => {
+  try {
+    const career = await Career.findOne({
+      where: { userId: req.user.id },
+    });
+
+    if (!career) {
+      return res.status(404).json({
+        message: "No career found",
+      });
+    }
+
+    const season = await Season.findOne({
+      where: {
+        careerId: career.id,
+        status: "active",
+      },
+    });
+
+    if (!season) {
+      return res.status(404).json({
+        message: "No active season found",
+      });
+    }
+
+    res.json(season);
+  } catch (error) {
+    console.error("getActiveSeason error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};

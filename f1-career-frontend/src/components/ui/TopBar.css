@@ -1,0 +1,10 @@
+.topbar {
+  height: 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 30px;
+  background: var(--bg-secondary);
+  backdrop-filter: blur(10px);
+  border-bottom: var(--border-glass);
+}

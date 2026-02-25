@@ -46,7 +46,10 @@ async function start() {
   try {
     await sequelize.authenticate();
     console.log('✅ Database connected');
-
+    console.log("DB URL:", process.env.DATABASE_URL);
+    await sequelize.query("SELECT current_user").then(r => {
+  console.log("DB USER:", r[0][0].current_user);
+});
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
     });

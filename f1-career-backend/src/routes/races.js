@@ -10,5 +10,5 @@ router.get( "/constructors/:seasonId", auth, raceController.getConstructorStandi
 router.get('/progression/:seasonId',auth,raceController.getSeasonProgression);
 router.get('/recap/:raceWeekendId', auth,raceController.getRaceRecapData);
 router.get('/recap-ai/:raceWeekendId',auth,raceController.getRaceRecapAI);
-
+router.post("/:raceWeekendId/simulate",auth,raceController.simulateRace);
 module.exports = router;

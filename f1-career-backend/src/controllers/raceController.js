@@ -82,6 +82,12 @@ exports.createRaceWeekend = async (req, res) => {
   res.status(201).json(raceWeekend);
 };
 
+
+const shuffleArray = (array) => {
+  return [...array].sort(() => 0.5 - Math.random());
+};
+
+
 /* =========================================================
    SUBMIT RACE RESULTS
 ========================================================= */
@@ -544,4 +550,67 @@ exports.getRaceRecapData = async (req, res) => {
       : null,
     dnfCount: dnfs.length,
   });
+};
+ 
+
+/* =========================================================
+   SIMULATE RACE
+========================================================= */
+
+exports.simulateRace = async (req, res) => {
+  try {
+    const { raceWeekendId } = req.params;
+
+    const race = await RaceWeekend.findByPk(raceWeekendId);
+    if (!race)
+      return res.status(404).json({ message: "Race not found" });
+
+    const existingResults = await RaceResult.findAll({
+      where: { raceWeekendId },
+    });
+
+    if (existingResults.length > 0) {
+      return res.status(400).json({
+        message: "Race already simulated",
+      });
+    }
+
+    const drivers = await Driver.findAll({
+      where: { isActive: true },
+    });
+
+    if (drivers.length !== 20) {
+      return res.status(400).json({
+        message: "Exactly 20 active drivers required",
+      });
+    }
+
+    const shuffled = shuffleArray(drivers);
+
+    const generatedResults = shuffled.map((driver, index) => ({
+      driverId: driver.id,
+      position: index + 1,
+      fastestLap: index === Math.floor(Math.random() * 10), // random top 10
+      dnf: false,
+    }));
+
+    // Reuse existing submit logic internally
+    await RaceResult.bulkCreate(
+      generatedResults.map((r) => ({
+        raceWeekendId,
+        ...r,
+      }))
+    );
+
+    // Update morale
+    await updateMoraleAfterRace(generatedResults, Driver);
+
+    res.json({
+      message: "Race simulated successfully",
+      results: generatedResults,
+    });
+  } catch (error) {
+    console.error("simulateRace error:", error);
+    res.status(500).json({ message: "Simulation failed" });
+  }
 };

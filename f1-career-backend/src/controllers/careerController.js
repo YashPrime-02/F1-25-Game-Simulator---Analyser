@@ -1,32 +1,54 @@
-// src/controllers/careerController.js
+const { Career, Season } = require("../models");
 
-const { Career } = require('../models');
-
+/* =========================================================
+   CREATE CAREER
+========================================================= */
 exports.createCareer = async (req, res) => {
-  const { name, type } = req.body;
+  try {
+    const { name, type } = req.body;
 
-  if (!name || !type) {
-    return res.status(400).json({ message: 'Name and type are required' });
+    if (!name || !type) {
+      return res.status(400).json({
+        message: "Career name and type are required",
+      });
+    }
+
+    const career = await Career.create({
+      userId: req.user.id,
+      name,
+      type,
+    });
+
+    const season = await Season.create({
+      careerId: career.id,
+      seasonNumber: 1,
+      year: new Date().getFullYear(),
+      raceCount: 10,
+      status: "active",
+    });
+
+    res.status(201).json({
+      career,
+      season,
+    });
+  } catch (error) {
+    console.error("createCareer error:", error);
+    res.status(500).json({ message: "Server error" });
   }
-
-  if (!['solo', 'myteam'].includes(type)) {
-    return res.status(400).json({ message: 'Invalid career type' });
-  }
-
-  const career = await Career.create({
-    userId: req.user.id,
-    name,
-    type,
-  });
-
-  res.status(201).json(career);
 };
-
+/* =========================================================
+   GET MY CAREERS
+========================================================= */
 exports.getMyCareers = async (req, res) => {
-  const careers = await Career.findAll({
-    where: { userId: req.user.id },
-    order: [['createdAt', 'DESC']],
-  });
+  try {
+    const careers = await Career.findAll({
+      where: { userId: req.user.id },
+      order: [["createdAt", "DESC"]],
+    });
 
-  res.json(careers);
+    res.json(careers);
+  } catch (error) {
+    console.error("getMyCareers error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
 };

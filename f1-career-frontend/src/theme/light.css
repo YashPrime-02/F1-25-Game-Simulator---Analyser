@@ -1,0 +1,11 @@
+body.light {
+  --bg-primary: #f4f6fa;
+  --bg-secondary: rgba(255, 255, 255, 0.6);
+  --bg-glass: rgba(255, 255, 255, 0.5);
+
+  --text-primary: #111;
+  --text-secondary: #555;
+
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}

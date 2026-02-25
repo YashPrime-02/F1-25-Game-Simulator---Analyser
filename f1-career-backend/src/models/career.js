@@ -1,29 +1,30 @@
-// src/models/career.js
-
 module.exports = (sequelize, DataTypes) => {
   const Career = sequelize.define(
-    'Career',
+    "Career",
     {
       id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true,
       },
+
       userId: {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
+
       name: {
-        type: DataTypes.STRING(150),
+        type: DataTypes.STRING,
         allowNull: false,
       },
+
       type: {
-        type: DataTypes.ENUM('solo', 'myteam'),
+        type: DataTypes.ENUM("solo", "myteam"),
         allowNull: false,
       },
     },
     {
-      tableName: 'careers',
+      tableName: "careers",
       timestamps: true,
     }
   );
