@@ -1,13 +1,16 @@
-
-import './App.css'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Login from "./pages/Auth/Login";
+import ModeSelect from "./pages/ModeSelect/ModeSelect";
 
 function App() {
-
   return (
-    <>
-    <h1>F1 Career</h1>
-    </>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/mode" element={<ModeSelect />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
