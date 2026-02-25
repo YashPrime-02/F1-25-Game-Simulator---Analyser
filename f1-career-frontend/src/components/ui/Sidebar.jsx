@@ -37,6 +37,7 @@ function Sidebar() {
       <div className="sidebar-footer" onClick={handleLogout}>
         🚪 Logout
       </div>
+      
     </motion.div>
   );
 }

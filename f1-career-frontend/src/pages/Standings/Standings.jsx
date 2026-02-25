@@ -31,26 +31,26 @@ function Standings() {
     loadData();
   }, [season]);
 
-if (seasonLoading) {
-  return <p>Loading Season...</p>;
-}
+  if (seasonLoading) {
+    return <p>Loading Season...</p>;
+  }
 
-if (!season) {
-  return (
-    <GlassCard>
-      <h2>No Active Season</h2>
-      <p>Please create a career and start a season.</p>
-    </GlassCard>
-  );
-}
+  if (!season) {
+    return (
+      <GlassCard>
+        <h2>No Active Season</h2>
+        <p>Please create a career and start a season.</p>
+      </GlassCard>
+    );
+  }
 
-if (loading) {
-  return <p>Loading Championship Table...</p>;
-}
+  if (loading) {
+    return <p>Loading Championship Table...</p>;
+  }
 
-if (error) {
-  return <p>Failed to load standings.</p>;
-}
+  if (error) {
+    return <p>Failed to load standings.</p>;
+  }
   return (
     <GlassCard>
       <h2>Driver Championship Standings</h2>
