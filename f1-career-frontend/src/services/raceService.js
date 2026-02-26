@@ -1,10 +1,9 @@
 // src/services/raceService.js
 import api from "./api";
 
-export const simulateRace = async (seasonId, roundNumber) => {
+export const simulateRace = async (seasonId) => {
   const response = await api.post("/races/simulate", {
     seasonId,
-    roundNumber,
   });
   return response.data;
 };

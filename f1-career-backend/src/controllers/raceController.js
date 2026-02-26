@@ -506,16 +506,13 @@ exports.getRaceRecapData = async (req, res) => {
    SIMULATE RACE
 ========================================================= */
 
-/* =========================================================
-   SIMULATE FULL RACE (ENGINE)
-========================================================= */
 exports.simulateRace = async (req, res) => {
   try {
-    const { seasonId, roundNumber } = req.body;
+    const { seasonId } = req.body;
 
-    if (!seasonId || !roundNumber) {
+    if (!seasonId) {
       return res.status(400).json({
-        message: "seasonId and roundNumber required",
+        message: "seasonId required",
       });
     }
 
@@ -523,14 +520,17 @@ exports.simulateRace = async (req, res) => {
     if (!season)
       return res.status(404).json({ message: "Season not found" });
 
-    // Check duplicate round
-    const existing = await RaceWeekend.findOne({
-      where: { seasonId, roundNumber },
+    // Detect last simulated round
+    const lastRace = await RaceWeekend.findOne({
+      where: { seasonId },
+      order: [["roundNumber", "DESC"]],
     });
 
-    if (existing) {
+    const nextRound = lastRace ? lastRace.roundNumber + 1 : 1;
+
+    if (nextRound > season.raceCount) {
       return res.status(400).json({
-        message: "Race already simulated",
+        message: "Season already completed",
       });
     }
 
@@ -549,11 +549,10 @@ exports.simulateRace = async (req, res) => {
     const transaction = await sequelize.transaction();
 
     try {
-      // Create weekend first
       const raceWeekend = await RaceWeekend.create(
         {
           seasonId,
-          roundNumber,
+          roundNumber: nextRound,
           weather: "Dry",
           safetyCar: false,
           redFlag: false,
@@ -565,14 +564,11 @@ exports.simulateRace = async (req, res) => {
         raceWeekendId: raceWeekend.id,
         driverId: driver.id,
         position: index + 1,
-        fastestLap:
-          index === Math.floor(Math.random() * 10), // random in top 10
+        fastestLap: index === Math.floor(Math.random() * 10),
         dnf: false,
       }));
 
-      await RaceResult.bulkCreate(generatedResults, {
-        transaction,
-      });
+      await RaceResult.bulkCreate(generatedResults, { transaction });
 
       await updateMoraleAfterRace(generatedResults, Driver);
 
@@ -581,6 +577,7 @@ exports.simulateRace = async (req, res) => {
       res.status(201).json({
         message: "Race simulated successfully",
         raceWeekendId: raceWeekend.id,
+        roundNumber: nextRound,
       });
 
     } catch (err) {

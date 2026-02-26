@@ -11,7 +11,7 @@ import "./raceControl.css";
 
 export default function RaceControl() {
   const { season } = useSeason();
-
+  const [currentRound, setCurrentRound] = useState(null);
   const [raceData, setRaceData] = useState(null);
   const [raceWeekendId, setRaceWeekendId] = useState(null);
   const [isSimulated, setIsSimulated] = useState(false);
@@ -26,9 +26,9 @@ export default function RaceControl() {
       setMessage(null);
       setSimLoading(true);
 
-      const simResponse = await simulateRace(season.id, 1);
+      const simResponse = await simulateRace(season.id);
+      setCurrentRound(simResponse.roundNumber);
       const weekendId = simResponse.raceWeekendId;
-
       setRaceWeekendId(weekendId);
 
       const raceData = await fetchRaceResults(weekendId);
@@ -54,66 +54,72 @@ export default function RaceControl() {
     }
   };
   return (
-  <div className="race-control-container">
-    <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      Race Control Center
-    </motion.h1>
+    <div className="race-control-container">
+      <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        Race Control Center
+      </motion.h1>
 
-    <GlassCard>
-      <button
-        className="simulate-btn"
-        onClick={() => {
-          if (isSimulated) {
-            setMessage(
-              "Simulation already ran once for this round. Move to next round."
-            );
-            return;
-          }
-          handleSimulate();
-        }}
-        disabled={simLoading || aiLoading}
-      >
-        {simLoading
-          ? "Simulating Race..."
-          : aiLoading
-          ? "Generating AI Recap..."
-          : "Simulate Race"}
-      </button>
-    </GlassCard>
-
-    {message && <div className="info-message">{message}</div>}
-
-    {/* ✅ AI Loader goes here */}
-    {aiLoading && (
-      <div className="ai-loader">
-        AI is generating cinematic recap... please hold.
-      </div>
-    )}
-
-    {results && (
-      <div className="results-card">
-        <h2>Race Results</h2>
-        <p>Winner: {results.winner}</p>
-        <p>Podium: {results.podium.join(", ")}</p>
-        <p>Fastest Lap: {results.fastestLap}</p>
-        <p>DNFs: {results.dnfCount}</p>
-      </div>
-    )}
-
-    {recap && (
-      <div className="recap-card">
-        <h2>Drive To Survive Recap</h2>
-        <p>{recap.narrative}</p>
-
-        <div className="championship-box">
-          <p>Leader: {recap.championship.leader}</p>
-          <p>Gap: {recap.championship.gap} pts</p>
-          {recap.championship.rivalry && (
-            <p>Rivalry: {recap.championship.rivalry}</p>
-          )}
-        </div>
-      </div>
-    )}
+      {currentRound && (
+  <div className="round-info">
+    Round {currentRound} Completed
   </div>
-);
+)}
+
+      <GlassCard>
+        <button
+          className="simulate-btn"
+          onClick={() => {
+            if (isSimulated) {
+              setMessage(
+                "Simulation already ran once for this round. Move to next round.",
+              );
+              return;
+            }
+            handleSimulate();
+          }}
+          disabled={simLoading || aiLoading}
+        >
+          {simLoading
+            ? "Simulating Race..."
+            : aiLoading
+              ? "Generating AI Recap..."
+              : "Simulate Race"}
+        </button>
+      </GlassCard>
+
+      {message && <div className="info-message">{message}</div>}
+
+      {/* ✅ AI Loader goes here */}
+      {aiLoading && (
+        <div className="ai-loader">
+          AI is generating cinematic recap... please hold.
+        </div>
+      )}
+
+      {results && (
+        <div className="results-card">
+          <h2>Race Results</h2>
+          <p>Winner: {results.winner}</p>
+          <p>Podium: {results.podium.join(", ")}</p>
+          <p>Fastest Lap: {results.fastestLap}</p>
+          <p>DNFs: {results.dnfCount}</p>
+        </div>
+      )}
+
+      {recap && (
+        <div className="recap-card">
+          <h2>Drive To Survive Recap</h2>
+          <p>{recap.narrative}</p>
+
+          <div className="championship-box">
+            <p>Leader: {recap.championship.leader}</p>
+            <p>Gap: {recap.championship.gap} pts</p>
+            {recap.championship.rivalry && (
+              <p>Rivalry: {recap.championship.rivalry}</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
