@@ -25,3 +25,22 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.ai-loader {
+  margin-top: 15px;
+  font-size: 14px;
+  color: #FCC201;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+
+.info-message {
+  margin-top: 10px;
+  color: #FCC201;
+  font-size: 14px;
+}
