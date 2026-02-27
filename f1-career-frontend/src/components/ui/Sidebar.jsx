@@ -32,6 +32,7 @@ function Sidebar() {
         <NavLink to="/dashboard/race-control">Race Center</NavLink>
         <NavLink to="/drivers">Drivers</NavLink>
         <NavLink to="/news">News</NavLink>
+        <NavLink to="/dashboard/championship">Championship</NavLink>
       </nav>
 
       <div className="sidebar-footer" onClick={handleLogout}>

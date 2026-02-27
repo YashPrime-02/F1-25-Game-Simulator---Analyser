@@ -11,6 +11,7 @@ import News from "./pages/News/News";
 import F1Background from "./components/background/F1Background";
 import PrivateRoute from "./pages/Auth/PrivateRoute";
 import PublicRoute from "./pages/Auth/PublicRoute";
+import ChampionshipPage from "./pages/Championship/Championship";
 
 function App() {
   return (
@@ -51,6 +52,7 @@ function App() {
             <Route path="/drivers" element={<Drivers />} />
             <Route path="/news" element={<News />} />
             <Route path="/dashboard/race-control" element={<RaceControl />} />
+            <Route path="/dashboard/championship" element={<ChampionshipPage />}/>
           </Route>
         </Routes>
       </BrowserRouter>

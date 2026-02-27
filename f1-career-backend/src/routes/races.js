@@ -13,5 +13,6 @@ router.get("/constructors/:seasonId", auth, raceController.getConstructorStandin
 router.get('/progression/:seasonId', auth, raceController.getSeasonProgression);
 router.get('/recap/:raceWeekendId', auth, raceController.getRaceRecapData);
 router.get('/recap-ai/:raceWeekendId', auth, raceController.getRaceRecapAI);
+router.get("/news/:seasonId", auth, raceController.getSeasonNews);
 
 module.exports = router;

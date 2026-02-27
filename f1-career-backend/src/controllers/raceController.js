@@ -590,3 +590,24 @@ exports.simulateRace = async (req, res) => {
     res.status(500).json({ message: "Simulation failed" });
   }
 };
+
+
+/* =========================================================
+   SIMULATE NEWS
+========================================================= */
+
+exports.getSeasonNews = async (req, res) => {
+  try {
+    const { seasonId } = req.params;
+
+    const news = await NewsFeed.findAll({
+      where: { seasonId },
+      order: [["roundNumber", "DESC"]],
+    });
+
+    res.json(news);
+  } catch (err) {
+    console.error("getSeasonNews error:", err);
+    res.status(500).json({ message: "Failed to fetch news" });
+  }
+};
