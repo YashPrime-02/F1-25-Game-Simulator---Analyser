@@ -31,7 +31,7 @@ return (
       transition={{ duration: 0.6 }}
     >
       <span className="live-dot"></span>
-      F1 LIVE NEWS FEED
+      F1 Commentary
     </motion.div>
 
     {news.length === 0 && (
