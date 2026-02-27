@@ -13,6 +13,8 @@ const { generateTransferRumorContext } = require('../services/simulation/transfe
 const { detectTeamTension } = require('../services/simulation/politicsService');
 const { SeasonMemory, NewsFeed } = require('../models');
 const { updateMoraleAfterRace } = require('../services/simulation/moraleService');
+const { finalizeSeasonIfNeeded } = require("../services/seasonFinalizer");
+
 
 const {
   RaceWeekend,
@@ -573,12 +575,21 @@ exports.simulateRace = async (req, res) => {
       await updateMoraleAfterRace(generatedResults, Driver);
 
       await transaction.commit();
+      
+      // ✅ Check season completion
+       let finale = null;
+
+      if (nextRound === season.raceCount) {
+       finale = await finalizeSeasonIfNeeded(season);
+       }
 
       res.status(201).json({
-        message: "Race simulated successfully",
-        raceWeekendId: raceWeekend.id,
-        roundNumber: nextRound,
-      });
+      message: "Race simulated successfully",
+      raceWeekendId: raceWeekend.id,
+       roundNumber: nextRound,
+      seasonCompleted: !!finale,
+      finale,
+    });
 
     } catch (err) {
       await transaction.rollback();
