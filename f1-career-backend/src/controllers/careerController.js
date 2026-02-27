@@ -3,6 +3,10 @@ const { Career, Season } = require("../models");
 /* =========================================================
    CREATE CAREER
 ========================================================= */
+
+/* =========================================================
+   CREATE CAREER
+========================================================= */
 exports.createCareer = async (req, res) => {
   try {
     const { name, type } = req.body;
@@ -10,6 +14,17 @@ exports.createCareer = async (req, res) => {
     if (!name || !type) {
       return res.status(400).json({
         message: "Career name and type are required",
+      });
+    }
+
+    // ✅ Prevent duplicate careers per user
+    const existingCareer = await Career.findOne({
+      where: { userId: req.user.id },
+    });
+
+    if (existingCareer) {
+      return res.status(400).json({
+        message: "Career already exists for this user",
       });
     }
 
@@ -31,11 +46,14 @@ exports.createCareer = async (req, res) => {
       career,
       season,
     });
+
   } catch (error) {
     console.error("createCareer error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
 /* =========================================================
    GET MY CAREERS
 ========================================================= */

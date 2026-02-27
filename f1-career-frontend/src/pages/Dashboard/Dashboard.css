@@ -1,0 +1,26 @@
+.news-item {
+  margin-bottom: 15px;
+}
+
+.news-item h4 {
+  font-weight: 600;
+}
+
+/* ===== GLASS NEWS HEADER ===== */
+
+.glass-news-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+/* smaller version of live indicator */
+.live-dot.small {
+  width: 8px;
+  height: 8px;
+}
+
+.live-dot.small {
+  box-shadow: 0 0 8px #ff1e1e;
+}

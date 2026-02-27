@@ -44,3 +44,13 @@
   color: #FCC201;
   font-size: 14px;
 }
+
+.season-finale {
+  margin: 20px 0;
+  padding: 14px;
+  background: linear-gradient(90deg,#ffd700,#ffb700);
+  color: black;
+  font-weight: bold;
+  border-radius: 10px;
+  text-align: center;
+}

@@ -13,7 +13,7 @@ const { generateTransferRumorContext } = require('../services/simulation/transfe
 const { detectTeamTension } = require('../services/simulation/politicsService');
 const { SeasonMemory, NewsFeed } = require('../models');
 const { updateMoraleAfterRace } = require('../services/simulation/moraleService');
-const { finalizeSeasonIfNeeded } = require("../services/seasonFinalizer");
+
 
 
 const {
@@ -505,6 +505,28 @@ exports.getRaceRecapData = async (req, res) => {
  
 
 /* =========================================================
+   FINALIZE SEASON HELPER (SAFE ADDITION)
+========================================================= */
+const finalizeSeasonIfNeeded = async (season) => {
+  // prevent double execution
+  if (season.status === "completed") return null;
+
+  const standings = await calculateDriverStandings(season.id);
+  if (!standings || !standings.length) return null;
+
+  const champion = standings[0];
+
+  await season.update({
+    status: "completed",
+  });
+
+  return {
+    champion: champion.driverName,
+    points: champion.totalPoints,
+  };
+};
+
+/* =========================================================
    SIMULATE RACE
 ========================================================= */
 
@@ -530,6 +552,7 @@ exports.simulateRace = async (req, res) => {
 
     const nextRound = lastRace ? lastRace.roundNumber + 1 : 1;
 
+    // season finished guard
     if (nextRound > season.raceCount) {
       return res.status(400).json({
         message: "Season already completed",
@@ -551,6 +574,7 @@ exports.simulateRace = async (req, res) => {
     const transaction = await sequelize.transaction();
 
     try {
+      // create weekend
       const raceWeekend = await RaceWeekend.create(
         {
           seasonId,
@@ -575,21 +599,24 @@ exports.simulateRace = async (req, res) => {
       await updateMoraleAfterRace(generatedResults, Driver);
 
       await transaction.commit();
-      
-      // ✅ Check season completion
-       let finale = null;
+
+      /* ===============================
+         ✅ SEASON FINALE CHECK
+      =============================== */
+
+      let finale = null;
 
       if (nextRound === season.raceCount) {
-       finale = await finalizeSeasonIfNeeded(season);
-       }
+        finale = await finalizeSeasonIfNeeded(season);
+      }
 
-      res.status(201).json({
-      message: "Race simulated successfully",
-      raceWeekendId: raceWeekend.id,
-       roundNumber: nextRound,
-      seasonCompleted: !!finale,
-      finale,
-    });
+      return res.status(201).json({
+        message: "Race simulated successfully",
+        raceWeekendId: raceWeekend.id,
+        roundNumber: nextRound,
+        seasonCompleted: !!finale,
+        finale,
+      });
 
     } catch (err) {
       await transaction.rollback();
@@ -601,8 +628,6 @@ exports.simulateRace = async (req, res) => {
     res.status(500).json({ message: "Simulation failed" });
   }
 };
-
-
 /* =========================================================
    SIMULATE NEWS
 ========================================================= */
@@ -620,5 +645,47 @@ exports.getSeasonNews = async (req, res) => {
   } catch (err) {
     console.error("getSeasonNews error:", err);
     res.status(500).json({ message: "Failed to fetch news" });
+  }
+};
+ 
+
+/* =========================================================
+   FINALIZE SEASON
+========================================================= */
+exports.finalizeSeason = async (req, res) => {
+  try {
+    const { seasonId } = req.params;
+
+    const season = await Season.findByPk(seasonId);
+    if (!season)
+      return res.status(404).json({ message: "Season not found" });
+
+    if (season.status === "completed") {
+      return res.json({ message: "Season already completed" });
+    }
+
+    // get standings using existing logic
+    const standings = await calculateDriverStandings(seasonId);
+
+    if (!standings.length) {
+      return res.status(400).json({
+        message: "No standings available",
+      });
+    }
+
+    const champion = standings[0];
+
+    await season.update({
+      status: "completed",
+    });
+
+    res.json({
+      message: "Season finalized",
+      champion,
+    });
+
+  } catch (error) {
+    console.error("finalizeSeason error:", error);
+    res.status(500).json({ message: "Failed to finalize season" });
   }
 };

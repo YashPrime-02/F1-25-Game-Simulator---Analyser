@@ -22,37 +22,47 @@ export default function RaceControl() {
   const [message, setMessage] = useState(null);
 
   const handleSimulate = async () => {
-    try {
-      setMessage(null);
-      setSimLoading(true);
+  try {
+    setMessage(null);
+    setSimLoading(true);
 
-      const simResponse = await simulateRace(season.id);
-      setCurrentRound(simResponse.roundNumber);
-      const weekendId = simResponse.raceWeekendId;
-      setRaceWeekendId(weekendId);
+    const simResponse = await simulateRace(season.id);
 
-      const raceData = await fetchRaceResults(weekendId);
-      setResults(raceData);
+    // round update
+    setCurrentRound(simResponse.roundNumber);
 
-      setSimLoading(false);
-      setAiLoading(true);
-
-      const aiData = await fetchAIRecap(weekendId);
-      setRecap(aiData);
-
-      setIsSimulated(true);
-    } catch (error) {
-      if (error.response?.data?.message === "Race already simulated") {
-        setMessage("Simulation already ran for this round.");
-        setIsSimulated(true);
-      } else {
-        console.error(error);
-      }
-    } finally {
-      setSimLoading(false);
-      setAiLoading(false);
+    // ✅ finale message
+    if (simResponse.seasonCompleted) {
+      setMessage(
+        `🏆 Season Completed! Champion: ${simResponse.finale?.champion}`
+      );
     }
-  };
+
+    const weekendId = simResponse.raceWeekendId;
+    setRaceWeekendId(weekendId);
+
+    const raceData = await fetchRaceResults(weekendId);
+    setResults(raceData);
+
+    setSimLoading(false);
+    setAiLoading(true);
+
+    const aiData = await fetchAIRecap(weekendId);
+    setRecap(aiData);
+
+    setIsSimulated(true);
+
+  } catch (error) {
+    if (error.response?.data?.message === "Season already completed") {
+      setMessage("Season already finished.");
+    } else {
+      console.error(error);
+    }
+  } finally {
+    setSimLoading(false);
+    setAiLoading(false);
+  }
+};
   return (
     <div className="race-control-container">
       <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -77,7 +87,7 @@ export default function RaceControl() {
             }
             handleSimulate();
           }}
-          disabled={simLoading || aiLoading}
+          disabled={simLoading || aiLoading || message?.includes("Season Completed")}
         >
           {simLoading
             ? "Simulating Race..."

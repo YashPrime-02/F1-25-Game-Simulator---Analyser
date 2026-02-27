@@ -7,19 +7,21 @@ function ModeSelect() {
   const navigate = useNavigate();
 
   const handleCreate = async (type) => {
-    try {
-      await createCareer({
-        name: type === "solo" ? "Driver Career" : "Team Career",
-        type, // must match enum: "solo" | "myteam"
-      });
+  try {
+    await createCareer({
+      name: type === "driver" ? "Driver Career" : "Team Career",
+      type,
+    });
 
-      navigate("/dashboard");
-    } catch (err) {
-      console.error("Career creation failed:", err);
+    navigate("/dashboard");
+  } catch (err) {
+    if (err.response?.data?.message === "Career already exists for this user") {
+      navigate("/dashboard"); // redirect instead of error
+    } else {
       alert("Career creation failed");
     }
-  };
-
+  }
+};
   return (
     <div className="mode-container">
       <motion.h1

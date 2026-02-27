@@ -27,3 +27,8 @@ export const fetchSeasonProgression = async (seasonId) => {
   const response = await api.get(`/races/progression/${seasonId}`);
   return response.data;
 };
+
+export const fetchDriverStandings = async (seasonId) => {
+  const response = await api.get(`/races/standings/${seasonId}`);
+  return response.data;
+};

@@ -218,3 +218,44 @@ exports.getActiveSeason = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+/* =========================================================
+   FINALIZE SEASON
+========================================================= */
+exports.finalizeSeason = async (req, res) => {
+  try {
+    const { seasonId } = req.params;
+
+    const season = await Season.findByPk(seasonId);
+    if (!season)
+      return res.status(404).json({ message: "Season not found" });
+
+    if (season.status === "completed") {
+      return res.json({ message: "Season already completed" });
+    }
+
+    // get standings using existing logic
+    const standings = await calculateDriverStandings(seasonId);
+
+    if (!standings.length) {
+      return res.status(400).json({
+        message: "No standings available",
+      });
+    }
+
+    const champion = standings[0];
+
+    await season.update({
+      status: "completed",
+    });
+
+    res.json({
+      message: "Season finalized",
+      champion,
+    });
+
+  } catch (error) {
+    console.error("finalizeSeason error:", error);
+    res.status(500).json({ message: "Failed to finalize season" });
+  }
+};
