@@ -4,16 +4,21 @@ import { fetchSeasonNews } from "../../services/raceService";
 import { fetchSeasonCommentary } from "../../services/commentaryService";
 import { assignVoice } from "../../utils/commentaryVoices";
 import GlassCard from "../../components/ui/GlassCard";
-
+import { fetchDriverStandings } from "../../services/raceService";
+import { calculateTension } from "../../services/championshipService";
 import "./Commentary.css";
 import useBackgroundAudio from "../../hooks/useBackgroundAudio";
 import f1Music from "../../assets/F1_theme.mp3";
+import { detectRivalryFrontend } from "../../utils/rivarlyDetector";
+import { getSeasonPhase } from "../../utils/seasonPhase";
 
 export default function Commentary() {
   const { season } = useSeason();
 
+  const [tension, setTension] = useState(0);
   const [news, setNews] = useState([]);
   const [commentary, setCommentary] = useState([]);
+  const [rivalry, setRivalry] = useState(null);
 
   /* ===== AUDIO ===== */
   useBackgroundAudio(f1Music, {
@@ -32,8 +37,12 @@ export default function Commentary() {
           fetchSeasonCommentary(season.id),
         ]);
 
+        const standings = await fetchDriverStandings(season.id);
+
+        setTension(calculateTension(standings));
         setNews(Array.isArray(newsData) ? newsData : []);
         setCommentary(Array.isArray(commentaryData) ? commentaryData : []);
+        setRivalry(detectRivalryFrontend(standings));
       } catch (err) {
         console.error("Failed loading commentary", err);
         setCommentary([]);
@@ -43,12 +52,17 @@ export default function Commentary() {
     loadContent();
   }, [season?.id]);
 
+  /* ===== DERIVED VALUES ===== */
   const latestRound = commentary[0]?.round;
+
+  const phase =
+    latestRound && season?.raceCount
+      ? getSeasonPhase(latestRound, season.raceCount)
+      : null;
 
   /* ===== UI ===== */
   return (
     <section className="commentary-section">
-
       {/* ===== BREAKING BANNER ===== */}
       {latestRound && (
         <div className="breaking-banner">
@@ -56,20 +70,35 @@ export default function Commentary() {
         </div>
       )}
 
+      {/* ===== SEASON PHASE ===== */}
+      {phase && <div className="season-phase">{phase}</div>}
+
       {/* ===== BROADCAST CARD ===== */}
       {commentary[0] && (
         <GlassCard>
           <div className="broadcast-card">
             <h2>📡 Race Broadcast</h2>
             <p>
-              Round {commentary[0].round} has concluded.
-              Media reaction is dominating the paddock discussion.
+              Round {commentary[0].round} has concluded. Media reaction is
+              dominating the paddock discussion.
             </p>
           </div>
         </GlassCard>
       )}
 
       <h2 className="commentary-title">Race Commentary</h2>
+      <h2 className="commentary-title">Championship Tension Meter</h2>
+
+      <div className="tension-meter">
+        <div className="tension-bar" style={{ width: `${tension}%` }} />
+      </div>
+
+      <h2 className="commentary-title">Championship Rivalry</h2>
+
+      {/* rivalry broadcast alert */}
+      <div className="rivalry-alert">
+        ⚔️ {rivalry || "No rivalry active right now"}
+      </div>
 
       {/* ===== TIMELINE ===== */}
       <div className="commentary-timeline">

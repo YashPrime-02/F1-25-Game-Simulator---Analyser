@@ -5,11 +5,10 @@ export const fetchSeasonCommentary = async (seasonId) => {
 
   const data = response.data;
 
-  // ✅ ensure array always returned
   if (!Array.isArray(data)) return [];
 
-  // ✅ normalize backend fields → frontend contract
   return data.map((item) => ({
+    round: item?.round,  
     text:
       item?.text ||
       item?.message ||
