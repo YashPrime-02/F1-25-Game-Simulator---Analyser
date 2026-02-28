@@ -1,6 +1,33 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+
+
+/* ================= GLOBAL SCROLLBAR ================= */
+
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0b0b; /* dark track */
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    #e10600,
+    #a00000
+  );
+  border-radius: 10px;
+  border: 2px solid #0b0b0b;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff1a12;
+}
+
+/* ================= FIREFOX ================= */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #e10600 #0b0b0b;
 }

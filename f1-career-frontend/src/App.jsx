@@ -7,12 +7,12 @@ import MainLayout from "./layouts/MainLayout";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Standings from "./pages/Standings/Standings";
 import Drivers from "./pages/Drivers/Drivers";
-import News from "./pages/News/News";
+import Commentary from "./pages/Commentary/Commentary";
 import F1Background from "./components/background/F1Background";
 import PrivateRoute from "./pages/Auth/PrivateRoute";
 import PublicRoute from "./pages/Auth/PublicRoute";
 import ChampionshipPage from "./pages/Championship/Championship";
-
+import './App.css';
 function App() {
   return (
     <ThemeProvider>
@@ -50,7 +50,7 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/standings" element={<Standings />} />
             <Route path="/drivers" element={<Drivers />} />
-            <Route path="/news" element={<News />} />
+            <Route path="/Commentary" element={<Commentary />} />
             <Route path="/dashboard/race-control" element={<RaceControl />} />
             <Route path="/dashboard/championship" element={<ChampionshipPage />}/>
           </Route>

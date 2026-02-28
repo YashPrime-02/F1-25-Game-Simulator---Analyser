@@ -31,7 +31,7 @@ function Sidebar() {
         <NavLink to="/standings">Standings</NavLink>
         <NavLink to="/dashboard/race-control">Race Center</NavLink>
         <NavLink to="/drivers">Drivers</NavLink>
-        <NavLink to="/news">News</NavLink>
+        <NavLink to="/Commentary">Commentary</NavLink>
         <NavLink to="/dashboard/championship">Championship</NavLink>
       </nav>
 

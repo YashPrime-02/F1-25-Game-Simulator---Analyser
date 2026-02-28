@@ -689,3 +689,29 @@ exports.finalizeSeason = async (req, res) => {
     res.status(500).json({ message: "Failed to finalize season" });
   }
 };
+
+
+/* =========================================================
+   COMMENTARY FEED
+========================================================= */
+exports.getSeasonCommentary = async (req, res) => {
+  try {
+    const { seasonId } = req.params;
+
+    const memories = await SeasonMemory.findAll({
+      where: { seasonId },
+      order: [["roundNumber", "DESC"]],
+    });
+
+    const commentary = memories.map((m) => ({
+      round: m.roundNumber,
+      commentary: m.summary,
+    }));
+
+    res.json(commentary);
+
+  } catch (err) {
+    console.error("getSeasonCommentary error:", err);
+    res.status(500).json({ message: "Failed to fetch commentary" });
+  }
+};
