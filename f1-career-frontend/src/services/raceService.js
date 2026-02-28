@@ -32,3 +32,10 @@ export const fetchDriverStandings = async (seasonId) => {
   const response = await api.get(`/races/standings/${seasonId}`);
   return response.data;
 };
+
+export const fetchChampionshipSummary = async (seasonId) => {
+  const response = await api.get(
+    `/races/championship-summary/${seasonId}`
+  );
+  return response.data;
+};

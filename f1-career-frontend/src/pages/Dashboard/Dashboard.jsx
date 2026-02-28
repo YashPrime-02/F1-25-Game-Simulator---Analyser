@@ -1,89 +1,108 @@
 import { useEffect, useState } from "react";
 import { useSeason } from "../../context/SeasonContext";
+import { fetchChampionshipSummary } from "../../services/raceService";
 import {
   fetchDriverStandings,
   fetchSeasonNews,
 } from "../../services/raceService";
-
-import "./dashboard.css";
 import GlassCard from "../../components/ui/GlassCard";
 import Counter from "../../components/ui/Counter";
-import useBackgroundAudio from "../../hooks/useBackgroundAudio";
-import f1Music from "../../assets/F1_theme.mp3";
-
 
 export default function Dashboard() {
   const { season } = useSeason();
-
   const [leader, setLeader] = useState(null);
-  const [gap, setGap] = useState(0);
-  const [news, setNews] = useState([]);
+  const [summary, setSummary] = useState(null);
 
   useEffect(() => {
-    const loadData = async () => {
+    if (!season?.id) return;
+
+    const loadSummary = async () => {
       try {
-        const standings = await fetchDriverStandings(season.id);
-
-        if (standings.length > 0) {
-          setLeader(standings[0].driverName);
-
-          if (standings.length > 1) {
-            setGap(standings[0].totalPoints - standings[1].totalPoints);
-          }
-        }
-
-        const newsData = await fetchSeasonNews(season.id);
-        setNews(newsData);
+        const data = await fetchChampionshipSummary(season.id);
+        setSummary(data);
       } catch (err) {
-        console.error("Dashboard load failed", err);
+        console.error("Failed loading championship summary", err);
       }
     };
 
-    if (season?.id) {
-      loadData();
-    }
-  }, [season]);
+    loadSummary();
+  }, [season?.id]);
 
-  useBackgroundAudio(f1Music, {
-    volume: 0.35,
-    loop: true
-  });
+  useEffect(() => {
+      const loadData = async () => {
+        try {
+          const standings = await fetchDriverStandings(season.id);
+  
+          if (standings.length > 0) {
+            setLeader(standings[0].driverName);
+  
+            if (standings.length > 1) {
+              setGap(standings[0].totalPoints - standings[1].totalPoints);
+            }
+          }
+  
+        
+        } catch (err) {
+          console.error("Dashboard load failed", err);
+        }
+      };
+  
+      if (season?.id) {
+        loadData();
+      }
+    }, [season]);
 
+  if (!summary) {
+    return (
+      <GlassCard>
+        <h2>Championship Loading...</h2>
+        <p>Run a race to generate standings.</p>
+      </GlassCard>
+    );
+  }
 
   return (
     <>
+      {/* Leader */}
       <GlassCard>
         <h2>Championship Leader</h2>
-        <p>{leader || "No races completed yet"}</p>
+        <p> {leader || "No races completed yet"}</p>
       </GlassCard>
 
       <br />
 
+      {/* Points Gap */}
       <GlassCard>
         <h2>Points Gap</h2>
-        <Counter value={gap} /> Points
+        <Counter value={summary.gap} /> Points
       </GlassCard>
 
       <br />
 
+      {/* Season Phase */}
       <GlassCard>
-        <div className="glass-news-header">
-          <h2>F1 Season News Feed</h2>
-          <span className="live-dot small"></span>
-        </div>
-
-        {news.length === 0 && <p>No news yet. Simulate a race.</p>}
-
-        {news.map((item) => (
-          <div key={item.id} className="news-item">
-            <h4>
-              Round {item.roundNumber} – {item.headline}
-            </h4>
-            <p>{item.content}</p>
-            <hr />
-          </div>
-        ))}
+        <h2>Season Phase</h2>
+        <p>{summary.phase}</p>
       </GlassCard>
+
+      <br />
+
+      {/* Momentum */}
+      <GlassCard>
+        <h2>Momentum</h2>
+        <p>{summary.momentum}</p>
+      </GlassCard>
+
+      {/* Rivalry */}
+      {summary.rivalry && (
+        <>
+          <br />
+          <GlassCard>
+            <h2>Rivalry Watch</h2>
+            <p>{summary.rivalry}</p>
+          </GlassCard>
+        </>
+      )}
     </>
   );
 }
