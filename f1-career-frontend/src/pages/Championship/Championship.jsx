@@ -12,6 +12,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import "./championship.css";
+import useBackgroundAudio from "../../hooks/useBackgroundAudio";
+import f1Music from "../../assets/F1_theme.mp3";
+
 
 export default function ChampionshipPage() {
   const { season } = useSeason();
@@ -37,6 +40,11 @@ export default function ChampionshipPage() {
 
     if (season?.id) loadProgression();
   }, [season]);
+  
+  useBackgroundAudio(f1Music, {
+    volume: 0.35,
+    loop: true
+  });
 
   return (
   <div className="championship-container">

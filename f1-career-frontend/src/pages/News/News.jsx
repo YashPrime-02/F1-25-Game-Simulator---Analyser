@@ -3,10 +3,20 @@ import { useSeason } from "../../context/SeasonContext";
 import { fetchSeasonNews } from "../../services/raceService";
 import { motion } from "framer-motion";
 import "./news.css";
+import useBackgroundAudio from "../../hooks/useBackgroundAudio";
+import f1Music from "../../assets/F1_theme.mp3";
+
+
 
 export default function News() {
   const { season } = useSeason();
   const [news, setNews] = useState([]);
+   
+
+  useBackgroundAudio(f1Music, {
+      volume: 0.35,
+      loop: true
+    });
 
   useEffect(() => {
     const loadNews = async () => {

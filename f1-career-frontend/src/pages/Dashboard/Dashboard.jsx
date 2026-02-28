@@ -8,6 +8,9 @@ import {
 import "./dashboard.css";
 import GlassCard from "../../components/ui/GlassCard";
 import Counter from "../../components/ui/Counter";
+import useBackgroundAudio from "../../hooks/useBackgroundAudio";
+import f1Music from "../../assets/F1_theme.mp3";
+
 
 export default function Dashboard() {
   const { season } = useSeason();
@@ -40,6 +43,12 @@ export default function Dashboard() {
       loadData();
     }
   }, [season]);
+
+  useBackgroundAudio(f1Music, {
+    volume: 0.35,
+    loop: true
+  });
+
 
   return (
     <>

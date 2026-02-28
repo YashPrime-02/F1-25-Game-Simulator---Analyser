@@ -8,3 +8,151 @@
   backdrop-filter: blur(10px);
   border-bottom: var(--border-glass);
 }
+
+/* =========================
+   MUTE BUTTON
+========================= */
+
+.mute-btn {
+  position: relative;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.4);
+  color: white;
+  cursor: pointer;
+  overflow: hidden;
+  font-size: 12px;
+  letter-spacing: 1px;
+  transition: all .3s ease;
+}
+
+/* F1 red glow */
+.mute-btn:hover {
+  border-color: #e10600;
+  box-shadow: 0 0 12px rgba(225,6,0,0.6);
+}
+
+/* Engine pulse animation */
+.engine-wave {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(225,6,0,0.4),
+    transparent
+  );
+  animation: engineMove 2s linear infinite;
+  opacity: .6;
+}
+
+@keyframes engineMove {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* MUTED STATE */
+.mute-btn.muted {
+  color: #aaa;
+  border-color: rgba(255,255,255,0.1);
+}
+
+.mute-btn.muted .engine-wave {
+  animation: none;
+  opacity: 0;
+}
+/* ===== LED RING ===== */
+
+.led-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 20px;
+  border: 2px solid #e10600;
+  box-shadow:
+    0 0 10px #e10600,
+    0 0 25px rgba(225,6,0,0.7);
+  transition: transform 0.08s linear;
+  pointer-events: none;
+}
+
+/* button base */
+.mute-btn {
+  position: relative;
+  padding: 8px 16px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 20px;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.2);
+  overflow: hidden;
+}
+
+.mute-btn.muted .led-ring {
+  opacity: 0;
+  box-shadow: none;
+}
+
+.status {
+  position: relative;
+  display: inline-block;
+  padding: 10px 18px;
+  border-radius: 8px;
+
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #fff;
+
+  background: linear-gradient(
+    120deg,
+    #0a0a0a,
+    #111,
+    #e10600,
+    #111,
+    #0a0a0a
+  );
+
+  background-size: 300% 300%;
+  animation: f1Flow 6s linear infinite;
+
+  overflow: hidden;
+}
+
+/* flowing race color */
+@keyframes f1Flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+/* moving light sweep */
+.status::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 60%;
+  height: 100%;
+
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,0.25),
+    transparent
+  );
+
+  transform: skewX(-20deg);
+  animation: lightSweep 3.5s infinite;
+}
+
+@keyframes lightSweep {
+  100% {
+    left: 140%;
+  }
+}
+
+.mute-btn:not(.muted) {
+  box-shadow: 0 0 12px rgba(225,6,0,0.35);
+}

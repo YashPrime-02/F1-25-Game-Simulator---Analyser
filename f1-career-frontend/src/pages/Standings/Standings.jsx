@@ -5,6 +5,10 @@ import GlassCard from "../../components/ui/GlassCard";
 import Counter from "../../components/ui/Counter";
 import { motion } from "framer-motion";
 import "./standings.css";
+import useBackgroundAudio from "../../hooks/useBackgroundAudio";
+import f1Music from "../../assets/F1_theme.mp3";
+
+
 
 function Standings() {
   const { season, loading: seasonLoading } = useSeason();
@@ -12,6 +16,10 @@ function Standings() {
   const [standings, setStandings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+   useBackgroundAudio(f1Music, {
+    volume: 0.35,
+    loop: true
+  });
 
   useEffect(() => {
     // Wait until season is loaded
@@ -51,6 +59,8 @@ function Standings() {
   if (error) {
     return <p>Failed to load standings.</p>;
   }
+
+
   return (
     <GlassCard>
       <h2>Driver Championship Standings</h2>
