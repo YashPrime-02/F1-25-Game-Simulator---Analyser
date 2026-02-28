@@ -13,8 +13,7 @@ const { generateTransferRumorContext } = require('../services/simulation/transfe
 const { detectTeamTension } = require('../services/simulation/politicsService');
 const { SeasonMemory, NewsFeed } = require('../models');
 const { updateMoraleAfterRace } = require('../services/simulation/moraleService');
-
-
+const { buildChampionshipSummary } = require("../services/championshipSummaryService");
 
 const {
   RaceWeekend,
@@ -713,5 +712,38 @@ exports.getSeasonCommentary = async (req, res) => {
   } catch (err) {
     console.error("getSeasonCommentary error:", err);
     res.status(500).json({ message: "Failed to fetch commentary" });
+  }
+};
+
+
+
+
+/* =========================================================
+   CHAMPIONSHIP SUMMARY
+========================================================= */
+exports.getChampionshipSummary = async (req, res) => {
+  try {
+    const { seasonId } = req.params;
+
+    const season = await Season.findByPk(seasonId);
+    if (!season)
+      return res.status(404).json({
+        message: "Season not found",
+      });
+
+    const summary = await buildChampionshipSummary(season);
+
+    if (!summary) {
+      return res.status(400).json({
+        message: "No championship data yet",
+      });
+    }
+
+    res.json(summary);
+  } catch (error) {
+    console.error("championshipSummary error:", error);
+    res.status(500).json({
+      message: "Failed to build summary",
+    });
   }
 };

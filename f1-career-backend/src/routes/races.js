@@ -15,5 +15,6 @@ router.get('/recap/:raceWeekendId', auth, raceController.getRaceRecapData);
 router.get('/recap-ai/:raceWeekendId', auth, raceController.getRaceRecapAI);
 router.get("/news/:seasonId", auth, raceController.getSeasonNews);
 router.get("/commentary/:seasonId",auth,raceController.getSeasonCommentary);
+router.get("/championship-summary/:seasonId",auth,raceController.getChampionshipSummary);
 
 module.exports = router;
