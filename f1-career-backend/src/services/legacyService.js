@@ -31,13 +31,16 @@ exports.archiveSeasonLegacy = async (season) => {
       where: { driverId: driver.driverId },
     });
 
-    legacy.seasons += 1;
-    legacy.totalPoints += driver.totalPoints;
-    legacy.wins += driver.wins;
-    legacy.podiums += driver.podiums;
+    if (!legacy) continue;
 
+    legacy.seasons = (legacy.seasons || 0) + 1;
+    legacy.points = (legacy.points || 0) + driver.totalPoints;
+    legacy.wins = (legacy.wins || 0) + driver.wins;
+    legacy.podiums = (legacy.podiums || 0) + driver.podiums;
+
+    // champion bonus
     if (standings[0].driverId === driver.driverId) {
-      legacy.championships += 1;
+      legacy.championships = (legacy.championships || 0) + 1;
     }
 
     await legacy.save();
