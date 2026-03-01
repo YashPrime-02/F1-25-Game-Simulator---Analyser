@@ -8,6 +8,8 @@ import {
 import GlassCard from "../../components/ui/GlassCard";
 import { motion } from "framer-motion";
 import "./raceControl.css";
+import useBackgroundAudio from "../../hooks/useBackgroundAudio";
+import f1Music from "../../assets/F1_theme.mp3";
 
 export default function RaceControl() {
   const { season } = useSeason();
@@ -20,7 +22,10 @@ export default function RaceControl() {
   const [simLoading, setSimLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [message, setMessage] = useState(null);
-
+   useBackgroundAudio(f1Music, {
+      volume: 0.35,
+      loop: true
+    });
   const handleSimulate = async () => {
   try {
     setMessage(null);

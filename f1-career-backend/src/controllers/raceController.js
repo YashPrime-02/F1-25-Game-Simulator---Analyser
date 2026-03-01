@@ -42,6 +42,8 @@ const { Commentary } = require("../models");
 const { getLegacyContext } = require("../services/legacyNarrativeService");
 const { archiveSeasonLegacy } = require("../services/legacyService");
 const { DriverLegacy } = require("../models");
+const { detectDriverDynasty } = require("../services/dynastyService");
+
 const POINTS_MAP = {
   1: 25,
   2: 18,
@@ -362,7 +364,7 @@ exports.getRaceRecapAI = async (req, res) => {
     const gap = p2 ? leader.totalPoints - p2.totalPoints : 0;
 
     /* ===============================
-       B3 COMMENTARY INTELLIGENCE
+       COMMENTARY CONTEXT
     =============================== */
 
     const seasonPhase = getSeasonPhase(
@@ -415,6 +417,7 @@ exports.getRaceRecapAI = async (req, res) => {
 
     const personality = getDriverPersonality(winner.driverId);
     const legacyContext = await getLegacyContext(winner.driverId);
+
     const winnerMorale = winner.Driver?.morale ?? 50;
 
     const winnerName = `${winner.Driver.firstName} ${winner.Driver.lastName}`;
@@ -427,12 +430,12 @@ exports.getRaceRecapAI = async (req, res) => {
           `${r.Driver.firstName} ${r.Driver.lastName} (${r.Driver.Team?.name || "Unknown"})`
       );
 
-    const fastestLap = results.find((r) => r.fastestLap === true);
+    const fastestLap = results.find((r) => r.fastestLap);
     const fastestLapText = fastestLap
       ? `${fastestLap.Driver.firstName} ${fastestLap.Driver.lastName}`
       : "None";
 
-    const dnfCount = results.filter((r) => r.dnf === true).length;
+    const dnfCount = results.filter((r) => r.dnf).length;
 
     const leaderDriver = await Driver.findByPk(leader.driverId);
     const leaderName = leaderDriver
@@ -440,7 +443,15 @@ exports.getRaceRecapAI = async (req, res) => {
       : "Unknown";
 
     /* ===============================
-       AI RECAP PROMPT
+       DYNASTY CONTEXT (STABLE POSITION)
+    =============================== */
+
+    const dynasty = await detectDriverDynasty(season.id);
+
+    console.log("DYNASTY USED IN PROMPT:", dynasty);
+
+    /* ===============================
+       AI PROMPT
     =============================== */
 
     const prompt = `
@@ -460,6 +471,18 @@ Driver Personality: ${personality.style}
 Winner Morale: ${winnerMorale}/100
 Historical Status: ${legacyContext.championStatus}
 Legacy Context: ${legacyContext.legacyNarrative}
+
+${
+  dynasty
+    ? `
+PRIMARY SEASON STORYLINE (HIGHEST PRIORITY):
+${dynasty.message}
+
+You MUST treat this as the central narrative of the season recap.
+All analysis should acknowledge this dominance.
+`
+    : "No dominant dynasty storyline detected."
+}
 
 Round: ${race.roundNumber}
 Weather: ${race.weather}
@@ -497,45 +520,6 @@ Generate dramatic but realistic recap.
     });
 
     /* ===============================
-       NEWS GENERATION
-    =============================== */
-
-    const newsPrompt = `
-Write a professional F1 news headline and short article.
-No line breaks. Under 120 words.
-Winner: ${winnerName}
-Championship Leader: ${leaderName}
-Gap: ${gap}
-`;
-
-    let newsContent = await generateAIText(newsPrompt);
-    newsContent = newsContent.replace(/\n/g, " ").trim();
-
-    await NewsFeed.create({
-      seasonId: season.id,
-      roundNumber: race.roundNumber,
-      headline: `${winnerName} Wins Round ${race.roundNumber}`,
-      content: newsContent,
-    });
-
-    /* ===============================
-       ✅ COMMENTARY GENERATION (B3)
-    =============================== */
-
-    await generateRaceCommentary({
-      season,
-      race,
-      winnerName,
-      leaderName,
-      gap,
-      seasonPhase,
-      rivalry,
-      controversy,
-      politicalTension,
-      titleStatus,
-    });
-
-    /* ===============================
        RESPONSE
     =============================== */
 
@@ -549,7 +533,6 @@ Gap: ${gap}
         titleClinched: titleStatus.clinched,
       },
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "AI recap failed" });
@@ -661,7 +644,7 @@ const finalizeSeasonIfNeeded = async (season) => {
 
   const champion = standings[0];
 
-  await archiveSeasonLegacy(season); 
+  await archiveSeasonLegacy(season);
 
   await season.update({
     status: "completed",

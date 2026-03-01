@@ -7,12 +7,18 @@ import {
 } from "../../services/raceService";
 import GlassCard from "../../components/ui/GlassCard";
 import Counter from "../../components/ui/Counter";
+import useBackgroundAudio from "../../hooks/useBackgroundAudio";
+import f1Music from "../../assets/F1_theme.mp3";
+
 
 export default function Dashboard() {
   const { season } = useSeason();
   const [leader, setLeader] = useState(null);
   const [summary, setSummary] = useState(null);
-
+   useBackgroundAudio(f1Music, {
+      volume: 0.35,
+      loop: true
+    });
   useEffect(() => {
     if (!season?.id) return;
 
