@@ -571,3 +571,25 @@
     0 10px 26px rgba(0,0,0,.45),
     0 0 18px rgba(225,6,0,.45);
 }
+
+/* LIVE broadcast indicator */
+.live-pill {
+  margin-left: 12px;
+  padding: 3px 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+
+  color: white;
+  background: linear-gradient(90deg, #ff0000, #ff3b3b);
+
+  border-radius: 20px;
+
+  animation: livePulse 1.4s infinite;
+}
+
+@keyframes livePulse {
+  0% { box-shadow: 0 0 0 rgba(255,0,0,0.6); }
+  50% { box-shadow: 0 0 12px rgba(255,0,0,0.9); }
+  100% { box-shadow: 0 0 0 rgba(255,0,0,0.6); }
+}

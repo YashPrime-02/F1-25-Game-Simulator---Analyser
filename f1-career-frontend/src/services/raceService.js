@@ -39,3 +39,25 @@ export const fetchChampionshipSummary = async (seasonId) => {
   );
   return response.data;
 };
+
+export const getRaceRecapAI = (raceWeekendId) =>
+  api.get(`/races/recap-ai/${raceWeekendId}`).then(r => r.data);
+
+/* ======================================================
+   ✅ NEW — COMMENTARY FEED 
+====================================================== */
+
+export const fetchSeasonCommentary = async (seasonId) => {
+  const response = await api.get(`/races/commentary/${seasonId}`);
+  return response.data;
+};
+
+/* ======================================================
+   ✅ NEW — LATEST RACE DATA (FOR COMMENTARY FEED) 
+====================================================== */
+
+
+export const fetchLatestRace = async (seasonId) => {
+  const res = await api.get(`/races/latest/${seasonId}`);
+  return res.data;
+};

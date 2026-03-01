@@ -1,0 +1,277 @@
+/* =========================================
+   RACE RECAP — F1 BROADCAST EXPERIENCE
+========================================= */
+
+.recap-page {
+  min-height: 100vh;
+  padding: 60px 20px;
+  max-width: 1100px;
+  margin: auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+
+  animation: pageFade 0.9s ease forwards;
+}
+
+
+/* -----------------------------------------
+   BROADCAST TITLE
+----------------------------------------- */
+
+.recap-page h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  letter-spacing: 2px;
+  font-weight: 700;
+
+  background: linear-gradient(
+    90deg,
+    #ffffff,
+    #ff1e1e,
+    #ffffff
+  );
+
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  color: transparent;
+
+  animation: broadcastScan 6s linear infinite;
+}
+
+
+/* -----------------------------------------
+   GLASS CARD ENHANCEMENT
+----------------------------------------- */
+
+.recap-page .glass-card {
+  position: relative;
+  overflow: hidden;
+
+  transition: transform 0.4s ease,
+              box-shadow 0.4s ease,
+              border 0.4s ease;
+
+  animation: cardEnter 0.8s ease forwards;
+}
+
+/* hover = broadcast focus */
+.recap-page .glass-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow:
+    0 20px 60px rgba(255, 0, 0, 0.25),
+    inset 0 0 30px rgba(255,255,255,0.05);
+}
+
+
+/* -----------------------------------------
+   LIVE SCAN LINE EFFECT
+----------------------------------------- */
+
+.recap-page .glass-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,0.08),
+    transparent
+  );
+
+  transform: translateX(-120%);
+  animation: scanMove 5s linear infinite;
+}
+
+
+/* -----------------------------------------
+   TEXT STYLING
+----------------------------------------- */
+
+.recap-page p {
+  line-height: 1.7;
+  font-size: 1.05rem;
+  color: rgba(255,255,255,0.9);
+
+  animation: textReveal 0.7s ease forwards;
+}
+
+.recap-page h3 {
+  margin-bottom: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #ff2b2b;
+}
+
+
+/* -----------------------------------------
+   LOADING BROADCAST STYLE
+----------------------------------------- */
+
+.recap-page > p {
+  text-align: center;
+  font-size: 1.2rem;
+  letter-spacing: 3px;
+  opacity: 0.8;
+
+  animation: pulseLoading 1.5s infinite;
+}
+
+
+/* =========================================
+   ANIMATIONS
+========================================= */
+
+@keyframes pageFade {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes broadcastScan {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+@keyframes scanMove {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+@keyframes textReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseLoading {
+  0%,100% { opacity: .4; }
+  50% { opacity: 1; }
+}
+
+
+/* =========================================
+   RESPONSIVE BROADCAST TUNING
+========================================= */
+
+@media (max-width: 768px) {
+  .recap-page {
+    padding: 40px 15px;
+  }
+
+  .recap-page h1 {
+    text-align: center;
+  }
+}
+
+/* ===============================
+   F1 AI GENERATION LOADER
+=============================== */
+
+.f1-loader {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: radial-gradient(
+    circle at center,
+    rgba(20,20,20,0.9),
+    #000
+  );
+
+  color: white;
+  text-align: center;
+}
+
+.f1-loader-center {
+  position: relative;
+  width: 420px;
+}
+
+/* animated scan line */
+.f1-scanline {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  right: 0;
+  height: 2px;
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #ff0000,
+    transparent
+  );
+
+  animation: scanMove 2s linear infinite;
+}
+
+@keyframes scanMove {
+  0% { transform: translateY(0); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(80px); opacity: 0; }
+}
+
+.f1-loader-title {
+  letter-spacing: 3px;
+  font-size: 1.6rem;
+  margin-bottom: 10px;
+  animation: pulseText 2s infinite;
+}
+
+.f1-loader-sub {
+  opacity: 0.7;
+  margin-bottom: 30px;
+}
+
+/* progress bar */
+.f1-progress {
+  height: 4px;
+  background: rgba(255,255,255,0.15);
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.f1-progress-bar {
+  height: 100%;
+  width: 30%;
+  background: linear-gradient(
+    90deg,
+    #ff0000,
+    #ff4d4d
+  );
+  animation: loadingBar 1.6s ease-in-out infinite;
+}
+
+@keyframes loadingBar {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(400%); }
+}
+
+@keyframes pulseText {
+  0%,100% { opacity: .6; }
+  50% { opacity: 1; }
+}

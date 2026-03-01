@@ -866,3 +866,28 @@ exports.getChampionshipSummary = async (req, res) => {
     });
   }
 };
+
+//* =========================================================
+// GET LATEST RACE (FOR COMMENTARY FEED)
+//* =========================================================
+
+
+
+exports.getLatestRace = async (req, res) => {
+  try {
+    const { seasonId } = req.params;
+
+    const race = await RaceWeekend.findOne({
+      where: { seasonId },
+      order: [["roundNumber", "DESC"]],
+    });
+
+    if (!race)
+      return res.status(404).json({ message: "No races yet" });
+
+    res.json(race);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch latest race" });
+  }
+};

@@ -11,6 +11,8 @@ import useBackgroundAudio from "../../hooks/useBackgroundAudio";
 import f1Music from "../../assets/F1_theme.mp3";
 import { detectRivalryFrontend } from "../../utils/rivarlyDetector";
 import { getSeasonPhase } from "../../utils/seasonPhase";
+import { useRef } from "react";
+
 
 export default function Commentary() {
   const { season } = useSeason();
@@ -19,12 +21,17 @@ export default function Commentary() {
   const [news, setNews] = useState([]);
   const [commentary, setCommentary] = useState([]);
   const [rivalry, setRivalry] = useState(null);
-
+  const topRef = useRef(null);
+  
   /* ===== AUDIO ===== */
   useBackgroundAudio(f1Music, {
     volume: 0.35,
     loop: true,
   });
+   
+  useEffect(() => {
+  topRef.current?.scrollIntoView({ behavior: "smooth" });
+}, [commentary]);
 
   /* ===== LOAD DATA ===== */
   useEffect(() => {
@@ -60,9 +67,16 @@ export default function Commentary() {
       ? getSeasonPhase(latestRound, season.raceCount)
       : null;
 
+  // ✅ ADD HERE
+  const sorted = [...commentary].sort((a, b) => b.round - a.round);
   /* ===== UI ===== */
+
+  const sortedCommentary = [...commentary].sort(
+  (a, b) => b.round - a.round
+);
   return (
     <section className="commentary-section">
+      <div ref={topRef}></div>
       {/* ===== BREAKING BANNER ===== */}
       {latestRound && (
         <div className="breaking-banner">
@@ -101,15 +115,18 @@ export default function Commentary() {
       </div>
 
       {/* ===== TIMELINE ===== */}
+
       <div className="commentary-timeline">
-        {commentary.map((c, index) => {
+        {sortedCommentary.map((c, index) => {
           const voice = assignVoice(index);
 
           return (
+            
             <GlassCard key={index}>
+              
               <div
                 className={`commentary-card ${
-                  index === commentary.length - 1 ? "latest" : ""
+                  index === sorted.length - 1 ? "latest" : ""
                 }`}
                 style={{ animationDelay: `${index * 0.18}s` }}
               >
@@ -117,6 +134,7 @@ export default function Commentary() {
 
                 <h3 className="commentary-header">
                   🎙 {voice.name} — Round {c.round}
+                  {index === 0 && <span className="live-pill">LIVE</span>}
                 </h3>
 
                 <p>{c.text || c.commentary || "—"}</p>

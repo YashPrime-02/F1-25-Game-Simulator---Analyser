@@ -31,3 +31,30 @@
   scrollbar-width: thin;
   scrollbar-color: #e10600 #0b0b0b;
 }
+
+/* ===== BROADCAST FADE ===== */
+
+.broadcast-enter {
+  opacity: 0;
+  transform: translateY(25px);
+  animation: broadcastFade 0.8s ease forwards;
+}
+
+@keyframes broadcastFade {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== TYPEWRITER ===== */
+
+.typewriter {
+  line-height: 1.7;
+  letter-spacing: 0.4px;
+}
+
+/* cinematic spacing */
+.recap-spacing {
+  margin-bottom: 22px;
+}

@@ -53,3 +53,23 @@ nav a.active {
   color: var(--text-secondary);
   opacity: 0.8;
 }
+
+.sidebar-live {
+  margin-top: 12px;
+  padding: 10px;
+  background: rgba(255, 0, 0, 0.15);
+  border-left: 3px solid #e10600;
+  cursor: pointer;
+  font-weight: 600;
+  animation: pulseLive 1.5s infinite;
+}
+
+.sidebar-live:hover {
+  background: rgba(255, 0, 0, 0.25);
+}
+
+@keyframes pulseLive {
+  0% { box-shadow: 0 0 0px rgba(255,0,0,0.4); }
+  50% { box-shadow: 0 0 12px rgba(255,0,0,0.8); }
+  100% { box-shadow: 0 0 0px rgba(255,0,0,0.4); }
+}
