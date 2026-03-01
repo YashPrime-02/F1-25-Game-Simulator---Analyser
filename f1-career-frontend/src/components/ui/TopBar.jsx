@@ -5,7 +5,7 @@ import {
   fetchSeasonNews,
 } from "../../services/raceService";
 import { useSeason } from "../../context/SeasonContext";
-import Counter from "../../components/ui/Counter";
+
 
 export default function TopBar() {
   const [muted, setMuted] = useState(false);

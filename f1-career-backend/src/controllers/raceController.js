@@ -1,20 +1,34 @@
 // src/controllers/raceController.js
-const { calculatePoints } = require('../utils/pointsCalculator');
-const { Driver } = require('../models'); 
-const { generateAIText } = require('../services/aiService');
+const { calculatePoints } = require("../utils/pointsCalculator");
+const { Driver } = require("../models");
+const { generateAIText } = require("../services/aiService");
 const {
   calculateDriverStandings,
   detectTitleClinch,
-} = require('../services/championshipService');
-const { detectRivalry } = require('../services/narrativeService');
-const { getDriverPersonality } = require('../services/simulation/personalityService');
-const { detectControversy } = require('../services/simulation/controversyService');
-const { generateTransferRumorContext } = require('../services/simulation/transferService');
-const { detectTeamTension } = require('../services/simulation/politicsService');
-const { SeasonMemory, NewsFeed } = require('../models');
-const { updateMoraleAfterRace } = require('../services/simulation/moraleService');
-const { buildChampionshipSummary } = require("../services/championshipSummaryService");
-
+} = require("../services/championshipService");
+const { detectRivalry } = require("../services/narrativeService");
+const {
+  getDriverPersonality,
+} = require("../services/simulation/personalityService");
+const {
+  detectControversy,
+} = require("../services/simulation/controversyService");
+const {
+  generateTransferRumorContext,
+} = require("../services/simulation/transferService");
+const { detectTeamTension } = require("../services/simulation/politicsService");
+const { SeasonMemory, NewsFeed } = require("../models");
+const {
+  updateMoraleAfterRace,
+} = require("../services/simulation/moraleService");
+const {
+  buildChampionshipSummary,
+} = require("../services/championshipSummaryService");
+const {
+  getSeasonPhase,
+  getTitlePressure,
+  getMomentum,
+} = require("../services/commentaryContextService");
 const {
   RaceWeekend,
   RaceResult,
@@ -23,7 +37,7 @@ const {
   Career,
   sequelize,
   Team,
-} = require('../models');
+} = require("../models");
 
 const POINTS_MAP = {
   1: 25,
@@ -47,20 +61,18 @@ exports.createRaceWeekend = async (req, res) => {
 
   if (!seasonId || !roundNumber) {
     return res.status(400).json({
-      message: 'seasonId and roundNumber required',
+      message: "seasonId and roundNumber required",
     });
   }
 
   const season = await Season.findByPk(seasonId);
-  if (!season)
-    return res.status(404).json({ message: 'Season not found' });
+  if (!season) return res.status(404).json({ message: "Season not found" });
 
   const career = await Career.findOne({
     where: { id: season.careerId, userId: req.user.id },
   });
 
-  if (!career)
-    return res.status(403).json({ message: 'Not authorized' });
+  if (!career) return res.status(403).json({ message: "Not authorized" });
 
   const existing = await RaceWeekend.findOne({
     where: { seasonId, roundNumber },
@@ -68,7 +80,7 @@ exports.createRaceWeekend = async (req, res) => {
 
   if (existing)
     return res.status(400).json({
-      message: 'Race weekend already exists for this round',
+      message: "Race weekend already exists for this round",
     });
 
   const raceWeekend = await RaceWeekend.create({
@@ -83,11 +95,9 @@ exports.createRaceWeekend = async (req, res) => {
   res.status(201).json(raceWeekend);
 };
 
-
 const shuffleArray = (array) => {
   return [...array].sort(() => 0.5 - Math.random());
 };
-
 
 /* =========================================================
    SUBMIT RACE RESULTS
@@ -97,19 +107,19 @@ exports.submitRaceResults = async (req, res) => {
 
   if (!raceWeekendId || !Array.isArray(results)) {
     return res.status(400).json({
-      message: 'raceWeekendId and results array required',
+      message: "raceWeekendId and results array required",
     });
   }
 
   if (results.length !== 20) {
     return res.status(400).json({
-      message: 'Exactly 20 results required (P1–P20)',
+      message: "Exactly 20 results required (P1–P20)",
     });
   }
 
   const raceWeekend = await RaceWeekend.findByPk(raceWeekendId);
   if (!raceWeekend)
-    return res.status(404).json({ message: 'Race weekend not found' });
+    return res.status(404).json({ message: "Race weekend not found" });
 
   const transaction = await sequelize.transaction();
 
@@ -127,18 +137,18 @@ exports.submitRaceResults = async (req, res) => {
         fastestLap: r.fastestLap || false,
         dnf: r.dnf || false,
       })),
-      { transaction }
+      { transaction },
     );
 
     // ✅ Morale system integration (SAFE ADDITION)
     await updateMoraleAfterRace(results, Driver);
 
     await transaction.commit();
-    res.json({ message: 'Race results saved successfully' });
+    res.json({ message: "Race results saved successfully" });
   } catch (err) {
     await transaction.rollback();
     console.error(err);
-    res.status(500).json({ message: 'Failed to save results' });
+    res.status(500).json({ message: "Failed to save results" });
   }
 };
 
@@ -177,7 +187,7 @@ exports.getDriverStandings = async (req, res) => {
       standings[r.driverId] = {
         driverId: r.driverId,
         driverName: `${driver.firstName} ${driver.lastName}`,
-        teamName: teamMap[driver.teamId] || 'Unknown',
+        teamName: teamMap[driver.teamId] || "Unknown",
         driverNumber: driver.driverNumber,
         totalPoints: 0,
         wins: 0,
@@ -191,7 +201,7 @@ exports.getDriverStandings = async (req, res) => {
   });
 
   const sorted = Object.values(standings).sort(
-    (a, b) => b.totalPoints - a.totalPoints
+    (a, b) => b.totalPoints - a.totalPoints,
   );
 
   res.json(sorted);
@@ -205,7 +215,7 @@ exports.getSeasonProgression = async (req, res) => {
 
   const raceWeekends = await RaceWeekend.findAll({
     where: { seasonId },
-    order: [['roundNumber', 'ASC']],
+    order: [["roundNumber", "ASC"]],
   });
 
   const drivers = await Driver.findAll();
@@ -256,38 +266,43 @@ exports.getRaceRecapAI = async (req, res) => {
 
     const race = await RaceWeekend.findByPk(raceWeekendId);
     if (!race)
-      return res.status(404).json({ message: 'Race weekend not found' });
+      return res.status(404).json({ message: "Race weekend not found" });
 
     const season = await Season.findByPk(race.seasonId);
-    if (!season)
-      return res.status(404).json({ message: 'Season not found' });
+    if (!season) return res.status(404).json({ message: "Season not found" });
 
     const results = await RaceResult.findAll({
       where: { raceWeekendId },
       include: [{ model: Driver, include: [Team] }],
-      order: [['position', 'ASC']],
+      order: [["position", "ASC"]],
     });
 
     if (!results.length)
-      return res.status(400).json({ message: 'No race results found' });
+      return res.status(400).json({ message: "No race results found" });
 
     const standings = await calculateDriverStandings(season.id);
     if (!standings?.length)
-      return res.status(400).json({ message: 'Standings unavailable' });
+      return res.status(400).json({ message: "Standings unavailable" });
 
     const leader = standings[0];
     const p2 = standings[1];
     const gap = p2 ? leader.totalPoints - p2.totalPoints : 0;
+    // ===== B3 Commentary Intelligence =====
+    const seasonPhase = getSeasonPhase(race.roundNumber, season.raceCount);
+
+    const titlePressure = getTitlePressure(gap);
+
+    const momentum = getMomentum(standings);
 
     const previousMemories = await SeasonMemory.findAll({
       where: { seasonId: season.id },
-      order: [['roundNumber', 'ASC']],
+      order: [["roundNumber", "ASC"]],
       limit: 5,
     });
 
     const memoryContext = previousMemories
       .map((m) => `Round ${m.roundNumber}: ${m.summary}`)
-      .join(' ');
+      .join(" ");
 
     const rivalry = detectRivalry(standings);
     const titleStatus = await detectTitleClinch(season, race.roundNumber);
@@ -296,37 +311,36 @@ exports.getRaceRecapAI = async (req, res) => {
     const transferRumors = generateTransferRumorContext(
       standings,
       race.roundNumber,
-      season.raceCount
+      season.raceCount,
     );
 
     const winner = results.find((r) => r.position === 1);
-    if (!winner)
-      return res.status(400).json({ message: 'Winner not found' });
+    if (!winner) return res.status(400).json({ message: "Winner not found" });
 
     const personality = getDriverPersonality(winner.driverId);
     const winnerMorale = winner.Driver?.morale ?? 50;
 
     const winnerName = `${winner.Driver.firstName} ${winner.Driver.lastName}`;
-    const winnerTeam = winner.Driver.Team?.name || 'Unknown';
+    const winnerTeam = winner.Driver.Team?.name || "Unknown";
 
     const podium = results
       .filter((r) => r.position <= 3)
       .map(
         (r) =>
-          `${r.Driver.firstName} ${r.Driver.lastName} (${r.Driver.Team?.name || 'Unknown'})`
+          `${r.Driver.firstName} ${r.Driver.lastName} (${r.Driver.Team?.name || "Unknown"})`,
       );
 
     const fastestLap = results.find((r) => r.fastestLap === true);
     const fastestLapText = fastestLap
       ? `${fastestLap.Driver.firstName} ${fastestLap.Driver.lastName}`
-      : 'None';
+      : "None";
 
     const dnfCount = results.filter((r) => r.dnf === true).length;
 
     const leaderDriver = await Driver.findByPk(leader.driverId);
     const leaderName = leaderDriver
       ? `${leaderDriver.firstName} ${leaderDriver.lastName}`
-      : 'Unknown';
+      : "Unknown";
 
     const prompt = `
 You are a serious professional Formula 1 commentator.
@@ -337,33 +351,35 @@ STRICT RULES:
 - Under 250 words.
 
 Season Context: ${memoryContext || 'Season opener.'}
+Season Phase: ${seasonPhase}
+Championship Pressure: ${titlePressure}
+Momentum Trend: ${momentum}
 Driver Personality: ${personality.style}
 Winner Morale: ${winnerMorale}/100
-
 Round: ${race.roundNumber}
 Weather: ${race.weather}
 SafetyCar: ${race.safetyCar}
 RedFlag: ${race.redFlag}
 
 Winner: ${winnerName} (${winnerTeam})
-Podium: ${podium.join(', ')}
+Podium: ${podium.join(", ")}
 Fastest Lap: ${fastestLapText}
 DNFs: ${dnfCount}
 
 Championship Leader: ${leaderName}
 Points Gap To P2: ${gap}
-Title Clinched: ${titleStatus.clinched ? 'Yes' : 'No'}
+Title Clinched: ${titleStatus.clinched ? "Yes" : "No"}
 
-Rivalry: ${rivalry?.message || 'None'}
-Controversy: ${controversy?.message || 'None'}
-Political Tension: ${politicalTension?.message || 'None'}
-Transfer Rumors: ${transferRumors?.message || 'None'}
+Rivalry: ${rivalry?.message || "None"}
+Controversy: ${controversy?.message || "None"}
+Political Tension: ${politicalTension?.message || "None"}
+Transfer Rumors: ${transferRumors?.message || "None"}
 
 Generate dramatic but realistic recap.
 `;
 
     let narrative = await generateAIText(prompt);
-    narrative = narrative.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+    narrative = narrative.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 
     await SeasonMemory.create({
       seasonId: season.id,
@@ -380,7 +396,7 @@ Gap: ${gap}
 `;
 
     let newsContent = await generateAIText(newsPrompt);
-    newsContent = newsContent.replace(/\n/g, ' ').trim();
+    newsContent = newsContent.replace(/\n/g, " ").trim();
 
     await NewsFeed.create({
       seasonId: season.id,
@@ -399,10 +415,9 @@ Gap: ${gap}
         titleClinched: titleStatus.clinched,
       },
     });
-
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'AI recap failed' });
+    res.status(500).json({ message: "AI recap failed" });
   }
 };
 /* =========================================================
@@ -436,7 +451,7 @@ exports.getConstructorStandings = async (req, res) => {
     if (!constructorTable[teamId]) {
       constructorTable[teamId] = {
         teamId,
-        teamName: teamMap[teamId] || 'Unknown',
+        teamName: teamMap[teamId] || "Unknown",
         totalPoints: 0,
         wins: 0,
       };
@@ -451,13 +466,11 @@ exports.getConstructorStandings = async (req, res) => {
   });
 
   const sorted = Object.values(constructorTable).sort(
-    (a, b) => b.totalPoints - a.totalPoints
+    (a, b) => b.totalPoints - a.totalPoints,
   );
 
   res.json(sorted);
 };
-
-
 
 /* =========================================================
    RACE RECAP DATA (NON-AI)
@@ -466,12 +479,11 @@ exports.getRaceRecapData = async (req, res) => {
   const { raceWeekendId } = req.params;
 
   const race = await RaceWeekend.findByPk(raceWeekendId);
-  if (!race)
-    return res.status(404).json({ message: 'Race not found' });
+  if (!race) return res.status(404).json({ message: "Race not found" });
 
   const results = await RaceResult.findAll({
     where: { raceWeekendId },
-    order: [['position', 'ASC']],
+    order: [["position", "ASC"]],
   });
 
   const drivers = await Driver.findAll();
@@ -493,7 +505,7 @@ exports.getRaceRecapData = async (req, res) => {
       : null,
     podium: podium.map(
       (p) =>
-        `${driverMap[p.driverId]?.firstName} ${driverMap[p.driverId]?.lastName}`
+        `${driverMap[p.driverId]?.firstName} ${driverMap[p.driverId]?.lastName}`,
     ),
     fastestLap: fastestLap
       ? `${driverMap[fastestLap.driverId]?.firstName} ${driverMap[fastestLap.driverId]?.lastName}`
@@ -501,7 +513,6 @@ exports.getRaceRecapData = async (req, res) => {
     dnfCount: dnfs.length,
   });
 };
- 
 
 /* =========================================================
    FINALIZE SEASON HELPER (SAFE ADDITION)
@@ -540,8 +551,7 @@ exports.simulateRace = async (req, res) => {
     }
 
     const season = await Season.findByPk(seasonId);
-    if (!season)
-      return res.status(404).json({ message: "Season not found" });
+    if (!season) return res.status(404).json({ message: "Season not found" });
 
     // Detect last simulated round
     const lastRace = await RaceWeekend.findOne({
@@ -582,7 +592,7 @@ exports.simulateRace = async (req, res) => {
           safetyCar: false,
           redFlag: false,
         },
-        { transaction }
+        { transaction },
       );
 
       const generatedResults = shuffled.map((driver, index) => ({
@@ -616,12 +626,10 @@ exports.simulateRace = async (req, res) => {
         seasonCompleted: !!finale,
         finale,
       });
-
     } catch (err) {
       await transaction.rollback();
       throw err;
     }
-
   } catch (error) {
     console.error("simulateRace error:", error);
     res.status(500).json({ message: "Simulation failed" });
@@ -646,7 +654,6 @@ exports.getSeasonNews = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch news" });
   }
 };
- 
 
 /* =========================================================
    FINALIZE SEASON
@@ -656,8 +663,7 @@ exports.finalizeSeason = async (req, res) => {
     const { seasonId } = req.params;
 
     const season = await Season.findByPk(seasonId);
-    if (!season)
-      return res.status(404).json({ message: "Season not found" });
+    if (!season) return res.status(404).json({ message: "Season not found" });
 
     if (season.status === "completed") {
       return res.json({ message: "Season already completed" });
@@ -682,13 +688,11 @@ exports.finalizeSeason = async (req, res) => {
       message: "Season finalized",
       champion,
     });
-
   } catch (error) {
     console.error("finalizeSeason error:", error);
     res.status(500).json({ message: "Failed to finalize season" });
   }
 };
-
 
 /* =========================================================
    COMMENTARY FEED
@@ -708,15 +712,11 @@ exports.getSeasonCommentary = async (req, res) => {
     }));
 
     res.json(commentary);
-
   } catch (err) {
     console.error("getSeasonCommentary error:", err);
     res.status(500).json({ message: "Failed to fetch commentary" });
   }
 };
-
-
-
 
 /* =========================================================
    CHAMPIONSHIP SUMMARY
