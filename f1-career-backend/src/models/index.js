@@ -77,8 +77,8 @@ Season.hasMany(TeamLegacy, { foreignKey: 'seasonId' });
 TeamLegacy.belongsTo(Season, { foreignKey: 'seasonId' });
 
 // Season ↔ DriverLegacy  ✅ ADDED
-Season.hasMany(DriverLegacy, { foreignKey: 'seasonId' });
-DriverLegacy.belongsTo(Season, { foreignKey: 'seasonId' });
+// Season.hasMany(DriverLegacy, { foreignKey: 'seasonId' });
+// DriverLegacy.belongsTo(Season, { foreignKey: 'seasonId' });
 
 
 

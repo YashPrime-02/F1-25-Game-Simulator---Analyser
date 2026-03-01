@@ -39,7 +39,9 @@ const {
   Team,
 } = require("../models");
 const { Commentary } = require("../models");
-
+const { getLegacyContext } = require("../services/legacyNarrativeService");
+const { archiveSeasonLegacy } = require("../services/legacyService");
+const { DriverLegacy } = require("../models");
 const POINTS_MAP = {
   1: 25,
   2: 18,
@@ -412,6 +414,7 @@ exports.getRaceRecapAI = async (req, res) => {
       return res.status(400).json({ message: "Winner not found" });
 
     const personality = getDriverPersonality(winner.driverId);
+    const legacyContext = await getLegacyContext(winner.driverId);
     const winnerMorale = winner.Driver?.morale ?? 50;
 
     const winnerName = `${winner.Driver.firstName} ${winner.Driver.lastName}`;
@@ -455,6 +458,8 @@ Championship Pressure: ${titlePressure}
 Momentum Trend: ${momentum}
 Driver Personality: ${personality.style}
 Winner Morale: ${winnerMorale}/100
+Historical Status: ${legacyContext.championStatus}
+Legacy Context: ${legacyContext.legacyNarrative}
 
 Round: ${race.roundNumber}
 Weather: ${race.weather}
