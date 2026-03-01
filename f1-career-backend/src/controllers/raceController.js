@@ -322,12 +322,21 @@ exports.getRaceRecapAI = async (req, res) => {
   try {
     const { raceWeekendId } = req.params;
 
+    /* ===============================
+       LOAD RACE + SEASON
+    =============================== */
+
     const race = await RaceWeekend.findByPk(raceWeekendId);
     if (!race)
       return res.status(404).json({ message: "Race weekend not found" });
 
     const season = await Season.findByPk(race.seasonId);
-    if (!season) return res.status(404).json({ message: "Season not found" });
+    if (!season)
+      return res.status(404).json({ message: "Season not found" });
+
+    /* ===============================
+       LOAD RESULTS
+    =============================== */
 
     const results = await RaceResult.findAll({
       where: { raceWeekendId },
@@ -338,6 +347,10 @@ exports.getRaceRecapAI = async (req, res) => {
     if (!results.length)
       return res.status(400).json({ message: "No race results found" });
 
+    /* ===============================
+       STANDINGS
+    =============================== */
+
     const standings = await calculateDriverStandings(season.id);
     if (!standings?.length)
       return res.status(400).json({ message: "Standings unavailable" });
@@ -345,12 +358,22 @@ exports.getRaceRecapAI = async (req, res) => {
     const leader = standings[0];
     const p2 = standings[1];
     const gap = p2 ? leader.totalPoints - p2.totalPoints : 0;
-    // ===== B3 Commentary Intelligence =====
-    const seasonPhase = getSeasonPhase(race.roundNumber, season.raceCount);
+
+    /* ===============================
+       B3 COMMENTARY INTELLIGENCE
+    =============================== */
+
+    const seasonPhase = getSeasonPhase(
+      race.roundNumber,
+      season.raceCount
+    );
 
     const titlePressure = getTitlePressure(gap);
-
     const momentum = getMomentum(standings);
+
+    /* ===============================
+       MEMORY CONTEXT
+    =============================== */
 
     const previousMemories = await SeasonMemory.findAll({
       where: { seasonId: season.id },
@@ -362,18 +385,31 @@ exports.getRaceRecapAI = async (req, res) => {
       .map((m) => `Round ${m.roundNumber}: ${m.summary}`)
       .join(" ");
 
+    /* ===============================
+       NARRATIVE SIGNALS
+    =============================== */
+
     const rivalry = detectRivalry(standings);
-    const titleStatus = await detectTitleClinch(season, race.roundNumber);
+    const titleStatus = await detectTitleClinch(
+      season,
+      race.roundNumber
+    );
     const controversy = detectControversy(results);
     const politicalTension = detectTeamTension(standings);
+
     const transferRumors = generateTransferRumorContext(
       standings,
       race.roundNumber,
-      season.raceCount,
+      season.raceCount
     );
 
+    /* ===============================
+       WINNER DATA
+    =============================== */
+
     const winner = results.find((r) => r.position === 1);
-    if (!winner) return res.status(400).json({ message: "Winner not found" });
+    if (!winner)
+      return res.status(400).json({ message: "Winner not found" });
 
     const personality = getDriverPersonality(winner.driverId);
     const winnerMorale = winner.Driver?.morale ?? 50;
@@ -385,7 +421,7 @@ exports.getRaceRecapAI = async (req, res) => {
       .filter((r) => r.position <= 3)
       .map(
         (r) =>
-          `${r.Driver.firstName} ${r.Driver.lastName} (${r.Driver.Team?.name || "Unknown"})`,
+          `${r.Driver.firstName} ${r.Driver.lastName} (${r.Driver.Team?.name || "Unknown"})`
       );
 
     const fastestLap = results.find((r) => r.fastestLap === true);
@@ -400,8 +436,13 @@ exports.getRaceRecapAI = async (req, res) => {
       ? `${leaderDriver.firstName} ${leaderDriver.lastName}`
       : "Unknown";
 
+    /* ===============================
+       AI RECAP PROMPT
+    =============================== */
+
     const prompt = `
 You are a serious professional Formula 1 commentator.
+
 STRICT RULES:
 - Use only provided data.
 - Do not invent incidents.
@@ -414,6 +455,7 @@ Championship Pressure: ${titlePressure}
 Momentum Trend: ${momentum}
 Driver Personality: ${personality.style}
 Winner Morale: ${winnerMorale}/100
+
 Round: ${race.roundNumber}
 Weather: ${race.weather}
 SafetyCar: ${race.safetyCar}
@@ -436,6 +478,10 @@ Transfer Rumors: ${transferRumors?.message || "None"}
 Generate dramatic but realistic recap.
 `;
 
+    /* ===============================
+       GENERATE RECAP
+    =============================== */
+
     let narrative = await generateAIText(prompt);
     narrative = narrative.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 
@@ -444,6 +490,10 @@ Generate dramatic but realistic recap.
       roundNumber: race.roundNumber,
       summary: narrative,
     });
+
+    /* ===============================
+       NEWS GENERATION
+    =============================== */
 
     const newsPrompt = `
 Write a professional F1 news headline and short article.
@@ -463,6 +513,10 @@ Gap: ${gap}
       content: newsContent,
     });
 
+    /* ===============================
+       ✅ COMMENTARY GENERATION (B3)
+    =============================== */
+
     await generateRaceCommentary({
       season,
       race,
@@ -470,9 +524,17 @@ Gap: ${gap}
       leaderName,
       gap,
       seasonPhase,
+      rivalry,
+      controversy,
+      politicalTension,
+      titleStatus,
     });
 
-    res.json({
+    /* ===============================
+       RESPONSE
+    =============================== */
+
+    return res.json({
       raceWeekendId,
       narrative,
       championship: {
@@ -482,6 +544,7 @@ Gap: ${gap}
         titleClinched: titleStatus.clinched,
       },
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "AI recap failed" });
@@ -586,13 +649,14 @@ exports.getRaceRecapData = async (req, res) => {
    FINALIZE SEASON HELPER (SAFE ADDITION)
 ========================================================= */
 const finalizeSeasonIfNeeded = async (season) => {
-  // prevent double execution
   if (season.status === "completed") return null;
 
   const standings = await calculateDriverStandings(season.id);
-  if (!standings || !standings.length) return null;
+  if (!standings?.length) return null;
 
   const champion = standings[0];
+
+  await archiveSeasonLegacy(season); 
 
   await season.update({
     status: "completed",
@@ -603,7 +667,6 @@ const finalizeSeasonIfNeeded = async (season) => {
     points: champion.totalPoints,
   };
 };
-
 /* =========================================================
    SIMULATE RACE
 ========================================================= */

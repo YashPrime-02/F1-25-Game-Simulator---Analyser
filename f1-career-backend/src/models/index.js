@@ -28,6 +28,9 @@ const Team = require('./team')(sequelize, DataTypes);
 const SeasonMemory = require('./seasonMemory')(sequelize, DataTypes);
 const NewsFeed = require('./newsFeed')(sequelize, DataTypes); 
 const Commentary = require("./commentary")(sequelize, DataTypes);
+const DriverLegacy = require("./DriverLegacy")(sequelize, DataTypes);
+const TeamLegacy = require("./TeamLegacy")(sequelize, DataTypes);
+
 
 // ==========================
 // ASSOCIATIONS
@@ -69,6 +72,16 @@ NewsFeed.belongsTo(Season, { foreignKey: 'seasonId' });
 Season.hasMany(Commentary, { foreignKey: 'seasonId' });
 Commentary.belongsTo(Season, { foreignKey: 'seasonId' });
 
+// Season ↔ TeamLegacy  ✅ ADDED
+Season.hasMany(TeamLegacy, { foreignKey: 'seasonId' });
+TeamLegacy.belongsTo(Season, { foreignKey: 'seasonId' });
+
+// Season ↔ DriverLegacy  ✅ ADDED
+Season.hasMany(DriverLegacy, { foreignKey: 'seasonId' });
+DriverLegacy.belongsTo(Season, { foreignKey: 'seasonId' });
+
+
+
 // ==========================
 // DEBUG (DEV ONLY)
 // ==========================
@@ -88,6 +101,8 @@ if (process.env.NODE_ENV === 'development') {
       SeasonMemory,
       NewsFeed, 
       Commentary,
+      DriverLegacy,
+      TeamLegacy,
     })
   );
 }
@@ -110,4 +125,6 @@ module.exports = {
   SeasonMemory,
   NewsFeed,
   Commentary, 
+  DriverLegacy,
+  TeamLegacy,
 };
