@@ -38,6 +38,7 @@ const {
   sequelize,
   Team,
 } = require("../models");
+const { Commentary } = require("../models");
 
 const POINTS_MAP = {
   1: 25,
@@ -258,6 +259,63 @@ exports.getSeasonProgression = async (req, res) => {
 };
 
 /* =========================================================
+   RACE commentary generation (AI-POWERED)
+========================================================= */
+
+const generateRaceCommentary = async ({
+  season,
+  race,
+  winnerName,
+  leaderName,
+  gap,
+  seasonPhase,
+}) => {
+  const commentators = [
+    {
+      name: "Crofty",
+      style: "Excited play-by-play commentator",
+    },
+    {
+      name: "Brundle",
+      style: "Technical analytical expert",
+    },
+    {
+      name: "Paddock Insider",
+      style: "Political paddock journalist",
+    },
+  ];
+
+  const outputs = [];
+
+  for (const voice of commentators) {
+    const prompt = `
+You are ${voice.name}, a ${voice.style} in Formula 1 broadcast.
+
+Round: ${race.roundNumber}
+Season Phase: ${seasonPhase}
+Winner: ${winnerName}
+Championship Leader: ${leaderName}
+Points Gap: ${gap}
+
+Write ONE short broadcast commentary line.
+No line breaks. Under 40 words.
+`;
+
+    let text = await generateAIText(prompt);
+    text = text.replace(/\n/g, " ").trim();
+
+    outputs.push({
+      seasonId: season.id,
+      round: race.roundNumber,
+      commentator: voice.name,
+      text,
+    });
+  }
+
+  await Commentary.bulkCreate(outputs);
+};
+
+/* =========================================================
    RACE RECAP AI
 ========================================================= */
 exports.getRaceRecapAI = async (req, res) => {
@@ -350,7 +408,7 @@ STRICT RULES:
 - No line breaks.
 - Under 250 words.
 
-Season Context: ${memoryContext || 'Season opener.'}
+Season Context: ${memoryContext || "Season opener."}
 Season Phase: ${seasonPhase}
 Championship Pressure: ${titlePressure}
 Momentum Trend: ${momentum}
@@ -405,6 +463,15 @@ Gap: ${gap}
       content: newsContent,
     });
 
+    await generateRaceCommentary({
+      season,
+      race,
+      winnerName,
+      leaderName,
+      gap,
+      seasonPhase,
+    });
+
     res.json({
       raceWeekendId,
       narrative,
@@ -420,6 +487,7 @@ Gap: ${gap}
     res.status(500).json({ message: "AI recap failed" });
   }
 };
+
 /* =========================================================
    CONSTRUCTOR STANDINGS
 ========================================================= */
