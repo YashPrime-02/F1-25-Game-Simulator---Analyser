@@ -1,4 +1,5 @@
-const { PlayerCareer, Driver, Team } = require("../models");
+
+    const { PlayerCareer, Driver, Team } = require("../models");
 
 /*
 ====================================================

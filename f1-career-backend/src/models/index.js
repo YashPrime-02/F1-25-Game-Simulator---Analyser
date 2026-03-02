@@ -28,6 +28,8 @@ const Team = require('./team')(sequelize, DataTypes);
 const SeasonMemory = require('./seasonMemory')(sequelize, DataTypes);
 const NewsFeed = require('./newsFeed')(sequelize, DataTypes); 
 const PlayerCareer = require("./playerCareer")(sequelize, DataTypes);
+const DriverLegacy = require("./DriverLegacy")(sequelize, DataTypes);
+const TeamLegacy = require("./TeamLegacy")(sequelize, DataTypes);
 // ==========================
 // ASSOCIATIONS
 // ==========================
@@ -118,6 +120,8 @@ if (process.env.NODE_ENV === 'development') {
       SeasonMemory,
       NewsFeed, 
       PlayerCareer,
+      DriverLegacy,   
+      TeamLegacy,
     })
   );
 }
@@ -140,4 +144,5 @@ module.exports = {
   SeasonMemory, 
   NewsFeed,     
   PlayerCareer,
-};
+  DriverLegacy,   
+  TeamLegacy,    }; 
