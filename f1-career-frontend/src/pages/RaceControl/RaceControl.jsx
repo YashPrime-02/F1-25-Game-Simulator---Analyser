@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSeason } from "../../context/SeasonContext";
 import {
   simulateRace,
@@ -13,6 +13,7 @@ import f1Music from "../../assets/F1_theme.mp3";
 
 export default function RaceControl() {
   const { season } = useSeason();
+
   const [currentRound, setCurrentRound] = useState(null);
   const [raceData, setRaceData] = useState(null);
   const [raceWeekendId, setRaceWeekendId] = useState(null);
@@ -22,108 +23,195 @@ export default function RaceControl() {
   const [simLoading, setSimLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [message, setMessage] = useState(null);
-   useBackgroundAudio(f1Music, {
-      volume: 0.35,
-      loop: true
-    });
+  const [sessionState, setSessionState] = useState("idle");
+
+  /* ===============================
+     ✅ SEASON STATUS CHECK
+  =============================== */
+  const isSeasonCompleted = season?.status === "completed";
+
+  useBackgroundAudio(f1Music, {
+    volume: 0.35,
+    loop: true,
+  });
+
+  /* ===============================
+     LOCK CONTROL ROOM WHEN FINISHED
+  =============================== */
+  useEffect(() => {
+    if (isSeasonCompleted) {
+      setSessionState("finished");
+    }
+  }, [isSeasonCompleted]);
+
+  /* ===============================
+     SIMULATION ENGINE
+  =============================== */
   const handleSimulate = async () => {
-  try {
-    setMessage(null);
-    setSimLoading(true);
+    try {
+      setMessage(null);
 
-    const simResponse = await simulateRace(season.id);
+      setSessionState("red");
+      setSimLoading(true);
 
-    // round update
-    setCurrentRound(simResponse.roundNumber);
+      await new Promise((r) => setTimeout(r, 800));
 
-    // ✅ finale message
-    if (simResponse.seasonCompleted) {
-      setMessage(
-        `🏆 Season Completed! Champion: ${simResponse.finale?.champion}`
-      );
-    }
+      setSessionState("yellow");
+      await new Promise((r) => setTimeout(r, 800));
 
-    const weekendId = simResponse.raceWeekendId;
-    setRaceWeekendId(weekendId);
+      setSessionState("green");
 
-    const raceData = await fetchRaceResults(weekendId);
-    setResults(raceData);
+      const simResponse = await simulateRace(season.id);
 
-    setSimLoading(false);
-    setAiLoading(true);
+      setCurrentRound(simResponse.roundNumber);
 
-    const aiData = await fetchAIRecap(weekendId);
-    setRecap(aiData);
+      if (simResponse.seasonCompleted) {
+        setMessage(
+          `🏆 Season Completed! Champion: ${simResponse.finale?.champion}`
+        );
+      }
 
-    setIsSimulated(true);
+      const weekendId = simResponse.raceWeekendId;
+      setRaceWeekendId(weekendId);
 
-  } catch (error) {
-    if (error.response?.data?.message === "Season already completed") {
-      setMessage("Season already finished.");
-    } else {
+      const raceData = await fetchRaceResults(weekendId);
+      setResults(raceData);
+
+      setSimLoading(false);
+      setAiLoading(true);
+
+      const aiData = await fetchAIRecap(weekendId);
+      setRecap(aiData);
+
+      setIsSimulated(true);
+      setSessionState("finished");
+    } catch (error) {
       console.error(error);
+      setMessage("🏁 Season already completed.");
+    } finally {
+      setSimLoading(false);
+      setAiLoading(false);
     }
-  } finally {
-    setSimLoading(false);
-    setAiLoading(false);
-  }
-};
+  };
+
+  /* ===============================
+     UI
+  =============================== */
+
   return (
     <div className="race-control-container">
-      <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        Race Control Center
-      </motion.h1>
+      {/* ================= HEADER ================= */}
+      <div className="control-header">
+        <h1>Race Control Center</h1>
+
+        <div className="session-lights">
+          <div
+            className={`light red ${
+              sessionState === "red" ? "active" : ""
+            }`}
+          />
+          <div
+            className={`light yellow ${
+              sessionState === "yellow" ? "active" : ""
+            }`}
+          />
+          <div
+            className={`light green ${
+              sessionState === "green" ||
+              sessionState === "finished"
+                ? "active"
+                : ""
+            }`}
+          />
+        </div>
+      </div>
 
       {currentRound && (
-  <div className="round-info">
-    Round {currentRound} Completed
-  </div>
-)}
+        <div className="round-info">
+          Round {currentRound} Completed
+        </div>
+      )}
 
+      {/* ================= CONTROL BUTTON ================= */}
       <GlassCard>
         <button
           className="simulate-btn"
           onClick={() => {
+            if (isSeasonCompleted) {
+              setMessage("🏁 Season already completed.");
+              return;
+            }
+
             if (isSimulated) {
               setMessage(
-                "Simulation already ran once for this round. Move to next round.",
+                "Simulation already ran once for this round. Move to next round."
               );
               return;
             }
+
             handleSimulate();
           }}
-          disabled={simLoading || aiLoading || message?.includes("Season Completed")}
+          disabled={
+            simLoading ||
+            aiLoading ||
+            isSeasonCompleted ||
+            message?.includes("Season Completed")
+          }
         >
           {simLoading
             ? "Simulating Race..."
             : aiLoading
-              ? "Generating AI Recap..."
-              : "Simulate Race"}
+            ? "Generating AI Recap..."
+            : "Simulate Race"}
         </button>
       </GlassCard>
 
       {message && <div className="info-message">{message}</div>}
 
-      {/* ✅ AI Loader goes here */}
-      {aiLoading && (
-        <div className="ai-loader">
-          AI is generating cinematic recap... please hold.
+      {/* ================= SEASON COMPLETED UI ================= */}
+      {isSeasonCompleted && (
+        <motion.div
+          className="season-finale"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          🏁 Season Completed — Race Control Closed
+          <br />
+          All sessions finished. Await next championship.
+        </motion.div>
+      )}
+
+      {/* ================= LOADERS ================= */}
+      {(simLoading || aiLoading) && (
+        <div className="status-feed">
+          {simLoading && "Race simulation running..."}
+          {aiLoading && " AI generating broadcast recap..."}
         </div>
       )}
 
+      {/* ================= RESULTS ================= */}
       {results && (
-        <div className="results-card">
-          <h2>Race Results</h2>
-          <p>Winner: {results.winner}</p>
-          <p>Podium: {results.podium.join(", ")}</p>
-          <p>Fastest Lap: {results.fastestLap}</p>
-          <p>DNFs: {results.dnfCount}</p>
-        </div>
+        <GlassCard>
+          <h2>🏁 Official Classification</h2>
+          <p>
+            <strong>Winner:</strong> {results.winner}
+          </p>
+          <p>
+            <strong>Podium:</strong> {results.podium.join(", ")}
+          </p>
+          <p>
+            <strong>Fastest Lap:</strong> {results.fastestLap}
+          </p>
+          <p>
+            <strong>DNFs:</strong> {results.dnfCount}
+          </p>
+        </GlassCard>
       )}
 
+      {/* ================= AI RECAP ================= */}
       {recap && (
-        <div className="recap-card">
-          <h2>Drive To Survive Recap</h2>
+        <GlassCard>
+          <h2>🎬 Drive To Survive Recap</h2>
           <p>{recap.narrative}</p>
 
           <div className="championship-box">
@@ -133,7 +221,7 @@ export default function RaceControl() {
               <p>Rivalry: {recap.championship.rivalry}</p>
             )}
           </div>
-        </div>
+        </GlassCard>
       )}
     </div>
   );
