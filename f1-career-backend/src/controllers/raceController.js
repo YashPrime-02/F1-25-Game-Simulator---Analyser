@@ -363,7 +363,6 @@ exports.getRaceRecapAI = async (req, res) => {
     const leader = standings[0];
     const p2 = standings[1];
     const gap = p2 ? leader.totalPoints - p2.totalPoints : 0;
-<<<<<<< Updated upstream
 
     /* ===============================
        COMMENTARY CONTEXT
@@ -381,9 +380,8 @@ exports.getRaceRecapAI = async (req, res) => {
        MEMORY CONTEXT
     =============================== */
 
-=======
+
     const playerCareer = await PlayerCareer.findOne({include: [Driver],});
->>>>>>> Stashed changes
     const previousMemories = await SeasonMemory.findAll({
       where: { seasonId: season.id },
       order: [["roundNumber", "ASC"]],
@@ -445,7 +443,6 @@ exports.getRaceRecapAI = async (req, res) => {
     const leaderDriver = await Driver.findByPk(leader.driverId);
     const leaderName = leaderDriver
       ? `${leaderDriver.firstName} ${leaderDriver.lastName}`
-<<<<<<< Updated upstream
       : "Unknown";
 
     /* ===============================
@@ -459,13 +456,10 @@ exports.getRaceRecapAI = async (req, res) => {
     /* ===============================
        AI PROMPT
     =============================== */
-=======
-      : 'Unknown';
+    'Unknown';
     const playerContext = playerCareer
   ? `Player Driver: ${playerCareer.Driver.firstName} ${playerCareer.Driver.lastName}`
   : "No player driver.";
->>>>>>> Stashed changes
-
     const prompt = `
 You are a serious professional Formula 1 commentator.
 
@@ -507,6 +501,9 @@ Fastest Lap: ${fastestLapText}
 DNFs: ${dnfCount}
 Player Context: ${playerContext}
 Championship Leader: ${leaderName}
+
+Points Gap To P2: ${gap}
+Title Clinched: ${titleStatus.clinched ? 'Yes' : 'No'}
 
 Points Gap To P2: ${gap}
 Title Clinched: ${titleStatus.clinched ? "Yes" : "No"}
