@@ -9,6 +9,10 @@ import "./RaceRecap.css";
 import useRevealSequence from "../../hooks/useRevealSequence";
 import TypewriterText from "../../components/ui/TypewriterText";
 import Counter from "../../components/ui/Counter";
+import useBackgroundAudio from "../../hooks/useBackgroundAudio";
+import f1Music from "../../assets/F1_theme.mp3";
+
+
 
 export default function RaceRecap() {
   const { raceWeekendId } = useParams();
@@ -20,6 +24,11 @@ export default function RaceRecap() {
   ["hero", "narrative", "podium", "championship"],
   900
 );
+
+useBackgroundAudio(f1Music, {
+    volume: 0.35,
+    loop: true
+  });
 
 
 useEffect(() => {

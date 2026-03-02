@@ -191,7 +191,7 @@
 =============================== */
 
 .f1-loader {
-  height: 100vh;
+  height: 100lvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -208,7 +208,7 @@
 
 .f1-loader-center {
   position: relative;
-  width: 420px;
+  width: 700px;
 }
 
 /* animated scan line */

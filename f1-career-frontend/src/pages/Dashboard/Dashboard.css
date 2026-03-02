@@ -1,26 +1,284 @@
-.news-item {
-  margin-bottom: 15px;
+/* =====================================================
+   DASHBOARD — F1 BROADCAST LAYOUT SYSTEM
+===================================================== */
+
+/* spacing scale (consistent rhythm) */
+:root {
+  --space-xs: 8px;
+  --space-sm: 14px;
+  --space-md: 22px;
+  --space-lg: 32px;
+  --space-xl: 44px;
 }
 
-.news-item h4 {
+/* =====================================================
+   GRID — SAFE + BREATHABLE
+===================================================== */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-lg);
+
+  max-width: 1120px;
+  margin: 0 auto;
+
+  padding:
+    var(--space-md)
+    var(--space-sm)
+    var(--space-xl);
+
+  box-sizing: border-box;
+}
+
+/* prevents overflow in grid children */
+.dashboard-grid > * {
+  min-width: 0;
+}
+
+/* broadcast panels full width */
+.broadcast-main {
+  grid-column: 1 / -1;
+}
+
+/* =====================================================
+   GLASS CARD REFINEMENT
+===================================================== */
+
+.glass-card {
+  padding: var(--space-lg) !important;
+  overflow: hidden;
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+
+  animation: cardEnter .45s ease forwards;
+}
+
+/* smoother reveal */
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* subtle F1 lift */
+.glass-card:hover {
+  transform: translateY(-2px);
+  transition: transform .25s ease;
+}
+
+/* =====================================================
+   TYPOGRAPHY SPACING (BIG IMPROVEMENT)
+===================================================== */
+
+.glass-card h2 {
+  margin-bottom: var(--space-xs);
+}
+
+.glass-card h3 {
+  margin-bottom: var(--space-xs);
   font-weight: 600;
 }
 
-/* ===== GLASS NEWS HEADER ===== */
+.glass-card p {
+  line-height: 1.6;
+  opacity: .9;
+}
+
+/* =====================================================
+   BROADCAST HEADER
+===================================================== */
 
 .glass-news-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
+  gap: var(--space-sm);
+
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-xs);
+
+  position: relative;
 }
 
-/* smaller version of live indicator */
+/* animated telemetry underline */
+.glass-news-header::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+
+  width: 100%;
+  height: 2px;
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #ff1e1e,
+    transparent
+  );
+
+  animation: telemetryFlow 3s linear infinite;
+}
+
+@keyframes telemetryFlow {
+  0% { transform: translateX(-40%); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateX(40%); opacity: 0; }
+}
+
+/* =====================================================
+   LIVE DOT
+===================================================== */
+
+.live-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff1e1e;
+
+  box-shadow:
+    0 0 6px #ff1e1e,
+    0 0 14px rgba(255,30,30,.6);
+
+  animation: livePulse 1.6s ease-in-out infinite;
+}
+
 .live-dot.small {
   width: 8px;
   height: 8px;
 }
 
-.live-dot.small {
-  box-shadow: 0 0 8px #ff1e1e;
+@keyframes livePulse {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.5); }
+}
+
+/* =====================================================
+   WATCH BUTTON (BALANCED)
+===================================================== */
+
+.watch-btn {
+  margin-top: var(--space-sm);
+  align-self: flex-start;
+
+  padding: 11px 18px;
+  border-radius: 10px;
+  border: none;
+
+  background: linear-gradient(90deg,#ff1e1e,#ff6a00);
+  color: white;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    transform .25s ease,
+    box-shadow .25s ease;
+}
+
+.watch-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(255,30,30,.35);
+}
+
+/* =====================================================
+   NEWS SPACING
+===================================================== */
+
+.news-item {
+  margin-top: var(--space-sm);
+}
+
+.news-item h4 {
+  margin-bottom: 6px;
+}
+
+/* =====================================================
+   COMMENTARY TICKER (NO OVERFLOW GUARANTEE)
+===================================================== */
+
+/* =====================================================
+   COMMENTARY BROADCAST PANEL (LONG TEXT SAFE)
+===================================================== */
+
+.ticker {
+  width: 100%;
+  overflow: hidden;
+}
+
+/* NOW behaves like readable article */
+.ticker-text {
+  white-space: normal;          /* ✅ allow wrapping */
+  display: block;
+
+  font-size: 1.05rem;
+  line-height: 1.75;
+
+  color: rgba(255,255,255,0.9);
+
+  max-width: 100%;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+
+  animation: commentaryFade .6s ease forwards;
+}
+
+/* cinematic reveal */
+@keyframes commentaryFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* =====================================================
+   RESPONSIVE — CLEAN STACKING
+===================================================== */
+
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .broadcast-main {
+    grid-column: auto;
+  }
+}
+
+/* =====================================
+   COMMENTARY PANEL (GlassCard replacement)
+===================================== */
+
+.commentary-panel {
+  padding: 28px;
+  border-radius: 14px;
+
+  background: rgba(20, 20, 20, 0.65);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.08);
+
+  overflow: hidden;
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  min-height: 160px;  
+   animation: cardEnter .45s ease forwards;
 }

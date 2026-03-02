@@ -1,148 +1,74 @@
 import { useEffect, useState } from "react";
 import { useSeason } from "../../context/SeasonContext";
-import { fetchSeasonNews } from "../../services/raceService";
-import { fetchSeasonCommentary } from "../../services/commentaryService";
-import { assignVoice } from "../../utils/commentaryVoices";
+import { fetchSeasonCommentary } from "../../services/raceService";
 import GlassCard from "../../components/ui/GlassCard";
-import { fetchDriverStandings } from "../../services/raceService";
-import { calculateTension } from "../../services/championshipService";
-import "./Commentary.css";
 import useBackgroundAudio from "../../hooks/useBackgroundAudio";
 import f1Music from "../../assets/F1_theme.mp3";
-import { detectRivalryFrontend } from "../../utils/rivarlyDetector";
-import { getSeasonPhase } from "../../utils/seasonPhase";
-import { useRef } from "react";
-
+import "./commentary.css";
 
 export default function Commentary() {
   const { season } = useSeason();
+  const [feed, setFeed] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [tension, setTension] = useState(0);
-  const [news, setNews] = useState([]);
-  const [commentary, setCommentary] = useState([]);
-  const [rivalry, setRivalry] = useState(null);
-  const topRef = useRef(null);
-  
-  /* ===== AUDIO ===== */
+  // ✅ retain F1 theme music
   useBackgroundAudio(f1Music, {
     volume: 0.35,
     loop: true,
   });
-   
-  useEffect(() => {
-  topRef.current?.scrollIntoView({ behavior: "smooth" });
-}, [commentary]);
 
-  /* ===== LOAD DATA ===== */
   useEffect(() => {
     if (!season?.id) return;
 
-    const loadContent = async () => {
+    const loadCommentary = async () => {
       try {
-        const [newsData, commentaryData] = await Promise.all([
-          fetchSeasonNews(season.id),
-          fetchSeasonCommentary(season.id),
-        ]);
-
-        const standings = await fetchDriverStandings(season.id);
-
-        setTension(calculateTension(standings));
-        setNews(Array.isArray(newsData) ? newsData : []);
-        setCommentary(Array.isArray(commentaryData) ? commentaryData : []);
-        setRivalry(detectRivalryFrontend(standings));
+        const data = await fetchSeasonCommentary(season.id);
+        setFeed(data || []);
       } catch (err) {
         console.error("Failed loading commentary", err);
-        setCommentary([]);
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadContent();
+    loadCommentary();
   }, [season?.id]);
 
-  /* ===== DERIVED VALUES ===== */
-  const latestRound = commentary[0]?.round;
+  if (loading) {
+    return (
+      <GlassCard>
+        <h2>🎙 Loading Broadcast Feed...</h2>
+      </GlassCard>
+    );
+  }
 
-  const phase =
-    latestRound && season?.raceCount
-      ? getSeasonPhase(latestRound, season.raceCount)
-      : null;
-
-  // ✅ ADD HERE
-  const sorted = [...commentary].sort((a, b) => b.round - a.round);
-  /* ===== UI ===== */
-
-  const sortedCommentary = [...commentary].sort(
-  (a, b) => b.round - a.round
-);
   return (
-    <section className="commentary-section">
-      <div ref={topRef}></div>
-      {/* ===== BREAKING BANNER ===== */}
-      {latestRound && (
-        <div className="breaking-banner">
-          BREAKING • Round {latestRound} completed • Championship fight evolving
-        </div>
-      )}
+    <div className="commentary-container">
 
-      {/* ===== SEASON PHASE ===== */}
-      {phase && <div className="season-phase">{phase}</div>}
+      <div className="glass-news-header">
+        <div className="live-dot"></div>
+        <h2>Live Race Commentary</h2>
+      </div>
 
-      {/* ===== BROADCAST CARD ===== */}
-      {commentary[0] && (
+      {feed.length === 0 ? (
         <GlassCard>
-          <div className="broadcast-card">
-            <h2>📡 Race Broadcast</h2>
-            <p>
-              Round {commentary[0].round} has concluded. Media reaction is
-              dominating the paddock discussion.
-            </p>
-          </div>
+          <p>No commentary yet. Run a race first.</p>
         </GlassCard>
+      ) : (
+        feed.map((item, index) => (
+          <GlassCard key={index}>
+            <div className="commentary-item">
+              <span className="round-badge">
+                Round {item.round}
+              </span>
+
+              <p className="commentary-text">
+                {item.commentary}
+              </p>
+            </div>
+          </GlassCard>
+        ))
       )}
-
-      <h2 className="commentary-title">Race Commentary</h2>
-      <h2 className="commentary-title">Championship Tension Meter</h2>
-
-      <div className="tension-meter">
-        <div className="tension-bar" style={{ width: `${tension}%` }} />
-      </div>
-
-      <h2 className="commentary-title">Championship Rivalry</h2>
-
-      {/* rivalry broadcast alert */}
-      <div className="rivalry-alert">
-        ⚔️ {rivalry || "No rivalry active right now"}
-      </div>
-
-      {/* ===== TIMELINE ===== */}
-
-      <div className="commentary-timeline">
-        {sortedCommentary.map((c, index) => {
-          const voice = assignVoice(index);
-
-          return (
-            
-            <GlassCard key={index}>
-              
-              <div
-                className={`commentary-card ${
-                  index === sorted.length - 1 ? "latest" : ""
-                }`}
-                style={{ animationDelay: `${index * 0.18}s` }}
-              >
-                <div className="timeline-dot" />
-
-                <h3 className="commentary-header">
-                  🎙 {voice.name} — Round {c.round}
-                  {index === 0 && <span className="live-pill">LIVE</span>}
-                </h3>
-
-                <p>{c.text || c.commentary || "—"}</p>
-              </div>
-            </GlassCard>
-          );
-        })}
-      </div>
-    </section>
+    </div>
   );
 }

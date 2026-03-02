@@ -12,10 +12,9 @@ import useBackgroundAudio from "../../hooks/useBackgroundAudio";
 import f1Music from "../../assets/F1_theme.mp3";
 import { useNavigate } from "react-router-dom";
 import { fetchLatestRace } from "../../services/raceService";
+import "./dashboard.css";
 
 export default function Dashboard() {
-
-
   /* ===============================
      STATE
   =============================== */
@@ -41,51 +40,43 @@ export default function Dashboard() {
      LOAD DASHBOARD DATA
   =============================== */
 
- useEffect(() => {
-  if (!season?.id) return;
+  useEffect(() => {
+    if (!season?.id) return;
 
-  const loadDashboard = async () => {
-    try {
-      const [
-        summaryData,
-        standings,
-        newsData,
-        commentaryData,
-        latestRace
-      ] = await Promise.all([
-        fetchChampionshipSummary(season.id),
-        fetchDriverStandings(season.id),
-        fetchSeasonNews(season.id),
-        fetchSeasonCommentary(season.id),
-        fetchLatestRace(season.id), 
-      ]);
+    const loadDashboard = async () => {
+      try {
+        const [summaryData, standings, newsData, commentaryData, latestRace] =
+          await Promise.all([
+            fetchChampionshipSummary(season.id),
+            fetchDriverStandings(season.id),
+            fetchSeasonNews(season.id),
+            fetchSeasonCommentary(season.id),
+            fetchLatestRace(season.id),
+          ]);
 
-      setSummary(summaryData);
-      setNews(newsData || []);
-      setCommentary(commentaryData || []);
+        setSummary(summaryData);
+        setNews(newsData || []);
+        setCommentary(commentaryData || []);
 
-      // ✅ store latest race id
-      if (latestRace?.id) {
-        setLatestRaceId(latestRace.id);
-      }
-
-      if (standings.length > 0) {
-        setLeader(standings[0].driverName);
-
-        if (standings.length > 1) {
-          setGap(
-            standings[0].totalPoints -
-              standings[1].totalPoints
-          );
+        // ✅ store latest race id
+        if (latestRace?.id) {
+          setLatestRaceId(latestRace.id);
         }
-      }
-    } catch (err) {
-      console.error("Dashboard load failed", err);
-    }
-  };
 
-  loadDashboard();
-}, [season?.id]);
+        if (standings.length > 0) {
+          setLeader(standings[0].driverName);
+
+          if (standings.length > 1) {
+            setGap(standings[0].totalPoints - standings[1].totalPoints);
+          }
+        }
+      } catch (err) {
+        console.error("Dashboard load failed", err);
+      }
+    };
+
+    loadDashboard();
+  }, [season?.id]);
   /* ===============================
      LOADING STATE
   =============================== */
@@ -104,30 +95,38 @@ export default function Dashboard() {
   =============================== */
 
   return (
-    <>
-      {/* ================= LEADER ================= */}
-      <GlassCard>
-        <h2>🏆 Championship Leader</h2>
-        <p>{leader || "No races completed yet"}</p>
+    <div className="dashboard-grid">
+      {/* ================= MAIN BROADCAST PANEL ================= */}
+      <GlassCard className="broadcast-main">
+        <div className="glass-news-header">
+          <span className="live-dot"></span>
+          <h2>Race Broadcast Center</h2>
+        </div>
+
+        <h3>🏆 {leader}</h3>
+        <p>{summary.phase}</p>
+
+        {season?.latestRaceId && (
+          <button
+            className="watch-btn"
+            onClick={() => navigate(`/recap/${season.latestRaceId}`)}
+          >
+            ▶ Watch Last Race Recap
+          </button>
+        )}
       </GlassCard>
 
-      <br />
+      {/* ================= LEADER ================= */}
+      <GlassCard>
+        <h2>Championship Leader</h2>
+        <p>{leader || "No races completed yet"}</p>
+      </GlassCard>
 
       {/* ================= GAP ================= */}
       <GlassCard>
         <h2>Points Gap</h2>
         <Counter value={gap} /> Points
       </GlassCard>
-
-      <br />
-
-      {/* ================= SEASON PHASE ================= */}
-      <GlassCard>
-        <h2>Season Phase</h2>
-        <p>{summary.phase}</p>
-      </GlassCard>
-
-      <br />
 
       {/* ================= MOMENTUM ================= */}
       <GlassCard>
@@ -137,51 +136,40 @@ export default function Dashboard() {
 
       {/* ================= RIVALRY ================= */}
       {summary.rivalry && (
-        <>
-          <br />
-          <GlassCard>
-            <h2>Rivalry Watch</h2>
-            <p>{summary.rivalry}</p>
-          </GlassCard>
-        </>
+        <GlassCard>
+          <h2>Rivalry Watch</h2>
+          <p>{summary.rivalry}</p>
+        </GlassCard>
       )}
 
-      {/* ================= NEWS FEED ================= */}
+      {/* ================= BREAKING NEWS ================= */}
       {news.length > 0 && (
-        <>
-          <br />
-          <GlassCard>
-            <div className="glass-news-header">
-              <span className="live-dot small"></span>
-              <h2>Paddock News</h2>
-            </div>
+        <GlassCard className="broadcast-main">
+          <div className="glass-news-header">
+            <span className="live-dot small"></span>
+            <h2>Breaking Paddock News</h2>
+          </div>
 
-            {news.slice(0, 3).map((n) => (
-              <div key={n.id} className="news-item">
-                <h4>{n.headline}</h4>
-                <p>{n.content}</p>
-              </div>
-            ))}
-          </GlassCard>
-        </>
+          <h4>{news[0].headline}</h4>
+          <p>{news[0].content}</p>
+        </GlassCard>
       )}
 
-      {/* ================= COMMENTARY ================= */}
+      {/* ================= LIVE COMMENTARY TICKER ================= */}
       {commentary.length > 0 && (
-        <>
-          <br />
-          <GlassCard>
-            <h2>🎙 Race Commentary</h2>
+        <div className="broadcast-main commentary-panel">
+          <h2>🎙 Live Commentary Feed</h2>
 
-            {commentary.slice(0, 3).map((c, i) => (
-              <p key={i}>
-                <strong>Round {c.round}:</strong>{" "}
-                {c.commentary}
-              </p>
-            ))}
-          </GlassCard>
-        </>
+          <div className="ticker">
+            <div className="ticker-text">
+              {commentary
+                .slice(0, 5)
+                .map((c) => `Round ${c.round}: ${c.commentary}   •   `)
+                .join("")}
+            </div>
+          </div>
+        </div>
       )}
-    </>
+    </div>
   );
 }
