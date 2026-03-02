@@ -9,14 +9,27 @@ function ModeSelect() {
   const handleCreate = async (type) => {
   try {
     await createCareer({
-      name: type === "driver" ? "Driver Career" : "Team Career",
+      name: type === "solo" ? "Driver Career" : "Team Career",
       type,
     });
 
-    navigate("/dashboard");
+    // ✅ route based on mode
+    if (type === "solo") {
+      navigate("/player-career/setup");
+    } else {
+      navigate("/team-career/setup");
+    }
+
   } catch (err) {
     if (err.response?.data?.message === "Career already exists for this user") {
-      navigate("/dashboard"); // redirect instead of error
+
+      // If career already exists → still go to setup
+      if (type === "solo") {
+        navigate("/player-career/setup");
+      } else {
+        navigate("/team-career/setup");
+      }
+
     } else {
       alert("Career creation failed");
     }

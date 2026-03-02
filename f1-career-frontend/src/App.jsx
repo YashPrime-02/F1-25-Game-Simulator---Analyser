@@ -13,7 +13,7 @@ import PrivateRoute from "./pages/Auth/PrivateRoute";
 import PublicRoute from "./pages/Auth/PublicRoute";
 import ChampionshipPage from "./pages/Championship/Championship";
 import RaceRecap from "./pages/RaceRecap/RaceRecap";
-
+import PlayerCareerSetup from "./pages/player/PlayerCareerSetup";
 import './App.css';
 function App() {
   return (
@@ -56,6 +56,7 @@ function App() {
             <Route path="/dashboard/race-control" element={<RaceControl />} />
             <Route path="/dashboard/championship" element={<ChampionshipPage />}/>
             <Route path="/recap/:raceWeekendId" element={<RaceRecap />} />
+            <Route path="/player-career/setup" element={<PlayerCareerSetup />} />
           </Route>
         </Routes>
       </BrowserRouter>

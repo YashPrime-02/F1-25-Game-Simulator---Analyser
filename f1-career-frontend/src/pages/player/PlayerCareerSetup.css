@@ -1,0 +1,280 @@
+/* ======================================================
+   F1 CAREER SETUP — NEXT GEN UI
+====================================================== */
+
+/* ===============================
+   GLOBAL ATMOSPHERE
+================================ */
+
+.career-container {
+  min-height: 100vh;
+  padding: 42px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255,0,60,0.18), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(0,200,255,0.12), transparent 45%),
+    #05070c;
+
+  animation: bgMove 22s linear infinite;
+}
+
+@keyframes bgMove {
+  0% { background-position: 0 0, 0 0; }
+  100% { background-position: 600px 0, -600px 0; }
+}
+
+/* ===============================
+   HEADINGS
+================================ */
+
+h2, h3 {
+  color: #fff;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+/* subtle divider under titles */
+h3::after {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 2px;
+  margin-top: 6px;
+  background: linear-gradient(90deg,#ff003c,transparent);
+}
+
+/* ===============================
+   INPUTS (Telemetry Panels)
+================================ */
+
+input {
+  width: 100%;
+  padding: 13px 14px;
+  margin-bottom: 14px;
+
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+
+  transition: all 0.25s ease;
+}
+
+input::placeholder {
+  color: rgba(255,255,255,0.45);
+}
+
+input:focus {
+  border-color: #ff003c;
+  box-shadow:
+    0 0 14px rgba(255,0,60,0.45),
+    inset 0 0 8px rgba(255,0,60,0.15);
+}
+
+/* ===============================
+   MODE SELECT
+================================ */
+
+.mode-select {
+  display: flex;
+  gap: 14px;
+}
+
+.mode-select button {
+  flex: 1;
+  padding: 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.15);
+
+  background: linear-gradient(
+    135deg,
+    rgba(255,0,60,0.12),
+    rgba(255,255,255,0.05)
+  );
+
+  color: white;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-weight: 500;
+}
+
+.mode-select button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 18px rgba(255,0,60,0.45);
+}
+
+/* ===============================
+   TEAM GRID
+================================ */
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 16px;
+}
+
+.team-card {
+  padding: 20px;
+  border-radius: 14px;
+  cursor: pointer;
+
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* animated LED sweep */
+.team-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,0.25),
+    transparent
+  );
+  transform: translateX(-120%);
+}
+
+.team-card:hover::after {
+  animation: sweep 0.9s ease;
+}
+
+@keyframes sweep {
+  to { transform: translateX(120%); }
+}
+
+.team-card:hover {
+  transform: translateY(-6px) scale(1.03);
+}
+
+.team-card.active {
+  border-color: #ff003c;
+  box-shadow:
+    0 0 20px rgba(255,0,60,0.65),
+    inset 0 0 12px rgba(255,0,60,0.15);
+}
+
+/* ===============================
+   DRIVER LIST
+================================ */
+
+.driver-card {
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+
+  background: rgba(255,255,255,0.05);
+  border: 1px solid transparent;
+
+  cursor: pointer;
+  transition: all 0.22s ease;
+}
+
+.driver-card:hover {
+  transform: translateX(8px);
+  background: rgba(255,255,255,0.08);
+}
+
+.driver-card.active {
+  border-left: 4px solid #00d9ff;
+  background: rgba(0,217,255,0.08);
+  box-shadow: 0 0 14px rgba(0,217,255,0.45);
+}
+
+/* ===============================
+   EMPTY / HINT TEXT
+================================ */
+
+.hint {
+  color: rgba(255,255,255,0.55);
+  font-size: 14px;
+  padding: 10px 0;
+  font-style: italic;
+}
+
+/* ===============================
+   START BUTTON — ENGINE IGNITION
+================================ */
+
+.start-btn {
+  width: 100%;
+  padding: 17px;
+  border-radius: 14px;
+  border: none;
+
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+
+  color: white;
+  cursor: pointer;
+
+  background: linear-gradient(90deg,#ff003c,#ff5a00);
+  position: relative;
+  overflow: hidden;
+
+  transition: all 0.25s ease;
+}
+
+/* ignition sweep */
+.start-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,0.45),
+    transparent
+  );
+  transform: translateX(-120%);
+}
+
+.start-btn:hover::before {
+  animation: sweep 1.1s linear;
+}
+
+.start-btn:hover {
+  transform: scale(1.04);
+  box-shadow: 0 0 28px rgba(255,0,60,0.75);
+}
+
+.start-btn:active {
+  transform: scale(0.98);
+}
+
+.start-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ===============================
+   RESPONSIVE
+================================ */
+
+@media (max-width: 768px) {
+  .career-container {
+    padding: 24px;
+  }
+
+  .team-grid {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+}

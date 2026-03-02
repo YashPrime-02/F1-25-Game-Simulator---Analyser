@@ -66,6 +66,9 @@ SeasonMemory.belongsTo(Season, { foreignKey: 'seasonId' });
 Season.hasMany(NewsFeed, { foreignKey: 'seasonId' });
 NewsFeed.belongsTo(Season, { foreignKey: 'seasonId' });
 
+
+
+
 // ✅ PlayerCareer relations
 
 // ==========================

@@ -8,6 +8,8 @@ const helmet = require('helmet');
 const seasonRoutes = require('./routes/seasons');
 const raceRoutes = require('./routes/races');
 const playerCareerRoutes = require("./routes/playerCareerRoutes");
+const teamRoutes = require("./routes/teams");
+const driverRoutes = require("./routes/drivers");
 
 // 🔎 DEBUG: check which models file is actually loaded
 const models = require('./models');
@@ -31,7 +33,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/careers', careerRoutes);
 app.use('/api/seasons', seasonRoutes);
 app.use('/api/races', raceRoutes);
-app.use("/player-career", playerCareerRoutes);
+app.use("/api/player-career", playerCareerRoutes);
+app.use("/api/teams", teamRoutes);
+app.use("/api/drivers", driverRoutes);
 
 // Health check
 app.get('/health', (req, res) =>
