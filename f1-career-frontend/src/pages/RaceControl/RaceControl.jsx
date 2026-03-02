@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import "./raceControl.css";
 import useBackgroundAudio from "../../hooks/useBackgroundAudio";
 import f1Music from "../../assets/F1_theme.mp3";
+import LiveRaceTimeline from "../Timeline/Timeline";
 
 export default function RaceControl() {
   const { season } = useSeason();
@@ -24,6 +25,7 @@ export default function RaceControl() {
   const [aiLoading, setAiLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [sessionState, setSessionState] = useState("idle");
+  const [showTimeline, setShowTimeline] = useState(false);
 
   /* ===============================
      ✅ SEASON STATUS CHECK
@@ -76,12 +78,13 @@ export default function RaceControl() {
 
       const raceData = await fetchRaceResults(weekendId);
       setResults(raceData);
-
+      setShowTimeline(true);
       setSimLoading(false);
       setAiLoading(true);
 
       const aiData = await fetchAIRecap(weekendId);
       setRecap(aiData);
+      setShowTimeline(false);
 
       setIsSimulated(true);
       setSessionState("finished");
@@ -97,7 +100,12 @@ export default function RaceControl() {
   /* ===============================
      UI
   =============================== */
-
+{showTimeline && results && (
+  <LiveRaceTimeline
+    results={results}
+    onFinish={() => setShowTimeline(false)}
+  />
+)}
   return (
     <div className="race-control-container">
       {/* ================= HEADER ================= */}
@@ -190,7 +198,7 @@ export default function RaceControl() {
       )}
 
       {/* ================= RESULTS ================= */}
-      {results && (
+      {results && !showTimeline && (
         <GlassCard>
           <h2>🏁 Official Classification</h2>
           <p>

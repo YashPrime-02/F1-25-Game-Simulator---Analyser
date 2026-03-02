@@ -1,0 +1,41 @@
+.timeline-container {
+  margin-top: 20px;
+  padding: 20px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+}
+
+.lap-bar {
+  width: 100%;
+  height: 10px;
+  background: #222;
+  border-radius: 20px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+
+.lap-progress {
+  height: 100%;
+  background: linear-gradient(90deg,#ff0000,#ffd000);
+  transition: width 0.8s linear;
+}
+
+.leader-box {
+  margin: 10px 0;
+  font-weight: 600;
+}
+
+.event-feed p {
+  font-size: 14px;
+  margin: 6px 0;
+  opacity: 0;
+  animation: fadeIn 0.4s forwards;
+}
+
+.event-feed span {
+  color: #FCC201;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
