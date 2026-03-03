@@ -189,21 +189,35 @@ exports.completeSeason = async (req, res) => {
 
 exports.getActiveSeason = async (req, res) => {
   try {
-    const career = await Career.findOne({
-      where: { userId: req.user.id },
-    });
-
-    if (!career) {
-      return res.status(404).json({
-        message: "No career found",
+    if (!req.user?.id) {
+      return res.status(401).json({
+        message: "Unauthorized",
       });
     }
 
+    const userId = req.user.id;
+    console.log("AUTH USER ID:", userId);
+
+    // 🔥 Step 1: find ALL careers of this user
+    const careers = await Career.findAll({
+      where: { userId },
+    });
+
+    if (!careers.length) {
+      return res.status(404).json({
+        message: "No career found for this user",
+      });
+    }
+
+    const careerIds = careers.map((c) => c.id);
+
+    // 🔥 Step 2: find active season belonging to ANY of those careers
     const season = await Season.findOne({
       where: {
-        careerId: career.id,
+        careerId: careerIds,
         status: "active",
       },
+      order: [["seasonNumber", "DESC"]],
     });
 
     if (!season) {
@@ -212,10 +226,13 @@ exports.getActiveSeason = async (req, res) => {
       });
     }
 
-    res.json(season);
+    return res.status(200).json(season);
+
   } catch (error) {
     console.error("getActiveSeason error:", error);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({
+      message: "Server error",
+    });
   }
 };
 

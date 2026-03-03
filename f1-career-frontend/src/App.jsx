@@ -14,6 +14,7 @@ import PublicRoute from "./pages/Auth/PublicRoute";
 import ChampionshipPage from "./pages/Championship/Championship";
 import RaceRecap from "./pages/RaceRecap/RaceRecap";
 import PlayerCareerSetup from "./pages/player/PlayerCareerSetup";
+import ManualRaceEntry from "./pages/Race/ManualRaceEntry";
 import './App.css';
 function App() {
   return (
@@ -57,6 +58,7 @@ function App() {
             <Route path="/dashboard/championship" element={<ChampionshipPage />}/>
             <Route path="/recap/:raceWeekendId" element={<RaceRecap />} />
             <Route path="/player-career/setup" element={<PlayerCareerSetup />} />
+            <Route path="/race/manual" element={<ManualRaceEntry />} />
           </Route>
         </Routes>
       </BrowserRouter>

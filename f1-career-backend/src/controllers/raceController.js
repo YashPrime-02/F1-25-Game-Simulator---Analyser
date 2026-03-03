@@ -60,44 +60,74 @@ const POINTS_MAP = {
 /* =========================================================
    CREATE RACE WEEKEND
 ========================================================= */
+
 exports.createRaceWeekend = async (req, res) => {
-  const { seasonId, roundNumber, weather, safetyCar, redFlag, notes } =
-    req.body;
+  try {
+    const { seasonId, weather, safetyCar, redFlag, notes } = req.body;
 
-  if (!seasonId || !roundNumber) {
-    return res.status(400).json({
-      message: "seasonId and roundNumber required",
+    if (!seasonId) {
+      return res.status(400).json({
+        message: "seasonId required",
+      });
+    }
+
+    const season = await Season.findByPk(seasonId);
+    if (!season)
+      return res.status(404).json({ message: "Season not found" });
+
+    const career = await Career.findOne({
+      where: { id: season.careerId, userId: req.user.id },
     });
+
+    if (!career)
+      return res.status(403).json({ message: "Not authorized" });
+
+    /* ✅ Detect completed rounds properly */
+    const completedRoundsRaw = await RaceResult.findAll({
+      attributes: ["raceWeekendId"],
+      include: [
+        {
+          model: RaceWeekend,
+          where: { seasonId },
+          attributes: ["roundNumber"],
+        },
+      ],
+      group: ["raceWeekendId", "RaceWeekend.id"],
+    });
+
+    const nextRound = completedRoundsRaw.length + 1;
+
+    if (nextRound > season.raceCount) {
+      return res.status(400).json({
+        message: "Season already completed",
+      });
+    }
+
+    const existing = await RaceWeekend.findOne({
+      where: { seasonId, roundNumber: nextRound },
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        message: "Weekend already exists for this round",
+      });
+    }
+
+    const raceWeekend = await RaceWeekend.create({
+      seasonId,
+      roundNumber: nextRound,
+      weather: weather || "Dry",
+      safetyCar: safetyCar || false,
+      redFlag: redFlag || false,
+      notes,
+    });
+
+    res.status(201).json(raceWeekend);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed creating weekend" });
   }
-
-  const season = await Season.findByPk(seasonId);
-  if (!season) return res.status(404).json({ message: "Season not found" });
-
-  const career = await Career.findOne({
-    where: { id: season.careerId, userId: req.user.id },
-  });
-
-  if (!career) return res.status(403).json({ message: "Not authorized" });
-
-  const existing = await RaceWeekend.findOne({
-    where: { seasonId, roundNumber },
-  });
-
-  if (existing)
-    return res.status(400).json({
-      message: "Race weekend already exists for this round",
-    });
-
-  const raceWeekend = await RaceWeekend.create({
-    seasonId,
-    roundNumber,
-    weather,
-    safetyCar,
-    redFlag,
-    notes,
-  });
-
-  res.status(201).json(raceWeekend);
 };
 
 const shuffleArray = (array) => {
@@ -323,13 +353,8 @@ No line breaks. Under 40 words.
    RACE RECAP AI
 ========================================================= */
 exports.getRaceRecapAI = async (req, res) => {
-  const { PlayerCareer } = require("../models");
   try {
     const { raceWeekendId } = req.params;
-
-    /* ===============================
-       LOAD RACE + SEASON
-    =============================== */
 
     const race = await RaceWeekend.findByPk(raceWeekendId);
     if (!race)
@@ -338,10 +363,6 @@ exports.getRaceRecapAI = async (req, res) => {
     const season = await Season.findByPk(race.seasonId);
     if (!season)
       return res.status(404).json({ message: "Season not found" });
-
-    /* ===============================
-       LOAD RESULTS
-    =============================== */
 
     const results = await RaceResult.findAll({
       where: { raceWeekendId },
@@ -352,10 +373,6 @@ exports.getRaceRecapAI = async (req, res) => {
     if (!results.length)
       return res.status(400).json({ message: "No race results found" });
 
-    /* ===============================
-       STANDINGS
-    =============================== */
-
     const standings = await calculateDriverStandings(season.id);
     if (!standings?.length)
       return res.status(400).json({ message: "Standings unavailable" });
@@ -363,10 +380,6 @@ exports.getRaceRecapAI = async (req, res) => {
     const leader = standings[0];
     const p2 = standings[1];
     const gap = p2 ? leader.totalPoints - p2.totalPoints : 0;
-
-    /* ===============================
-       COMMENTARY CONTEXT
-    =============================== */
 
     const seasonPhase = getSeasonPhase(
       race.roundNumber,
@@ -376,12 +389,6 @@ exports.getRaceRecapAI = async (req, res) => {
     const titlePressure = getTitlePressure(gap);
     const momentum = getMomentum(standings);
 
-    /* ===============================
-       MEMORY CONTEXT
-    =============================== */
-
-
-    const playerCareer = await PlayerCareer.findOne({include: [Driver],});
     const previousMemories = await SeasonMemory.findAll({
       where: { seasonId: season.id },
       order: [["roundNumber", "ASC"]],
@@ -391,10 +398,6 @@ exports.getRaceRecapAI = async (req, res) => {
     const memoryContext = previousMemories
       .map((m) => `Round ${m.roundNumber}: ${m.summary}`)
       .join(" ");
-
-    /* ===============================
-       NARRATIVE SIGNALS
-    =============================== */
 
     const rivalry = detectRivalry(standings);
     const titleStatus = await detectTitleClinch(
@@ -410,16 +413,21 @@ exports.getRaceRecapAI = async (req, res) => {
       season.raceCount
     );
 
-    /* ===============================
-       WINNER DATA
-    =============================== */
-
     const winner = results.find((r) => r.position === 1);
-    if (!winner)
-      return res.status(400).json({ message: "Winner not found" });
+    if (!winner || !winner.Driver)
+      return res.status(400).json({ message: "Winner data missing" });
 
-    const personality = getDriverPersonality(winner.driverId);
-    const legacyContext = await getLegacyContext(winner.driverId);
+    /* ===== SAFE PERSONALITY ===== */
+    const personality = getDriverPersonality(winner.driverId) || {
+      style: "Balanced racer",
+    };
+
+    /* ===== SAFE LEGACY ===== */
+    const legacyContext =
+      (await getLegacyContext(winner.driverId)) || {
+        championStatus: "Unknown",
+        legacyNarrative: "No legacy data",
+      };
 
     const winnerMorale = winner.Driver?.morale ?? 50;
 
@@ -430,11 +438,11 @@ exports.getRaceRecapAI = async (req, res) => {
       .filter((r) => r.position <= 3)
       .map(
         (r) =>
-          `${r.Driver.firstName} ${r.Driver.lastName} (${r.Driver.Team?.name || "Unknown"})`
+          `${r.Driver?.firstName || ""} ${r.Driver?.lastName || ""} (${r.Driver?.Team?.name || "Unknown"})`
       );
 
     const fastestLap = results.find((r) => r.fastestLap);
-    const fastestLapText = fastestLap
+    const fastestLapText = fastestLap?.Driver
       ? `${fastestLap.Driver.firstName} ${fastestLap.Driver.lastName}`
       : "None";
 
@@ -445,83 +453,41 @@ exports.getRaceRecapAI = async (req, res) => {
       ? `${leaderDriver.firstName} ${leaderDriver.lastName}`
       : "Unknown";
 
-    /* ===============================
-       DYNASTY CONTEXT (STABLE POSITION)
-    =============================== */
+    /* ===== SAFE PLAYER CAREER ===== */
+    const { PlayerCareer } = require("../models");
 
-    const dynasty = await detectDriverDynasty(season.id);
+    const playerCareer = await PlayerCareer.findOne({
+      where: { userId: req.user.id },
+      include: [Driver],
+    });
 
-    console.log("DYNASTY USED IN PROMPT:", dynasty);
+    const playerContext =
+      playerCareer && playerCareer.Driver
+        ? `Player Driver: ${playerCareer.Driver.firstName} ${playerCareer.Driver.lastName}`
+        : "No player driver.";
 
-    /* ===============================
-       AI PROMPT
-    =============================== */
-    'Unknown';
-    const playerContext = playerCareer
-  ? `Player Driver: ${playerCareer.Driver.firstName} ${playerCareer.Driver.lastName}`
-  : "No player driver.";
     const prompt = `
-You are a serious professional Formula 1 commentator.
+You are a professional Formula 1 commentator.
+No line breaks. Under 200 words.
 
-STRICT RULES:
-- Use only provided data.
-- Do not invent incidents.
-- No line breaks.
-- Under 250 words.
-
-Season Context: ${memoryContext || "Season opener."}
 Season Phase: ${seasonPhase}
-Championship Pressure: ${titlePressure}
-Momentum Trend: ${momentum}
-Driver Personality: ${personality.style}
-Winner Morale: ${winnerMorale}/100
-Historical Status: ${legacyContext.championStatus}
-Legacy Context: ${legacyContext.legacyNarrative}
-
-${
-  dynasty
-    ? `
-PRIMARY SEASON STORYLINE (HIGHEST PRIORITY):
-${dynasty.message}
-
-You MUST treat this as the central narrative of the season recap.
-All analysis should acknowledge this dominance.
-`
-    : "No dominant dynasty storyline detected."
-}
-
-Round: ${race.roundNumber}
-Weather: ${race.weather}
-SafetyCar: ${race.safetyCar}
-RedFlag: ${race.redFlag}
-
+Momentum: ${momentum}
 Winner: ${winnerName} (${winnerTeam})
 Podium: ${podium.join(", ")}
 Fastest Lap: ${fastestLapText}
 DNFs: ${dnfCount}
-Player Context: ${playerContext}
 Championship Leader: ${leaderName}
-
-Points Gap To P2: ${gap}
-Title Clinched: ${titleStatus.clinched ? 'Yes' : 'No'}
-
-Points Gap To P2: ${gap}
-Title Clinched: ${titleStatus.clinched ? "Yes" : "No"}
-
+Gap: ${gap}
+Title Clinched: ${titleStatus?.clinched ? "Yes" : "No"}
 Rivalry: ${rivalry?.message || "None"}
 Controversy: ${controversy?.message || "None"}
 Political Tension: ${politicalTension?.message || "None"}
 Transfer Rumors: ${transferRumors?.message || "None"}
-
-Generate dramatic but realistic recap.
+Player Context: ${playerContext}
 `;
 
-    /* ===============================
-       GENERATE RECAP
-    =============================== */
-
     let narrative = await generateAIText(prompt);
-    narrative = narrative.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+    narrative = narrative?.replace(/\n/g, " ").trim() || "Recap unavailable.";
 
     await SeasonMemory.create({
       seasonId: season.id,
@@ -529,26 +495,24 @@ Generate dramatic but realistic recap.
       summary: narrative,
     });
 
-    /* ===============================
-       RESPONSE
-    =============================== */
-
     return res.json({
       raceWeekendId,
       narrative,
       championship: {
         leader: leaderName,
         gap,
-        rivalry: rivalry?.message || null,
-        titleClinched: titleStatus.clinched,
+        titleClinched: titleStatus?.clinched || false,
       },
     });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "AI recap failed" });
+    console.error("AI RECAP ERROR:", err);
+    return res.status(500).json({
+      message: "AI recap failed",
+      error: err.message,
+    });
   }
 };
-
 /* =========================================================
    CONSTRUCTOR STANDINGS
 ========================================================= */
@@ -680,22 +644,56 @@ exports.simulateRace = async (req, res) => {
     }
 
     const season = await Season.findByPk(seasonId);
-    if (!season) return res.status(404).json({ message: "Season not found" });
+    if (!season)
+      return res.status(404).json({ message: "Season not found" });
 
-    // Detect last simulated round
-    const lastRace = await RaceWeekend.findOne({
-      where: { seasonId },
-      order: [["roundNumber", "DESC"]],
+    /* =========================================================
+       ✅ DETECT COMPLETED ROUNDS (BASED ON RESULTS, NOT WEEKENDS)
+    ========================================================= */
+
+    const completedRoundsRaw = await RaceResult.findAll({
+      attributes: ["raceWeekendId"],
+      include: [
+        {
+          model: RaceWeekend,
+          where: { seasonId },
+          attributes: ["roundNumber"],
+        },
+      ],
+      group: ["raceWeekendId", "RaceWeekend.id"],
     });
 
-    const nextRound = lastRace ? lastRace.roundNumber + 1 : 1;
+    const completedRounds = completedRoundsRaw.length;
 
-    // season finished guard
+    const nextRound = completedRounds + 1;
+
     if (nextRound > season.raceCount) {
       return res.status(400).json({
         message: "Season already completed",
       });
     }
+
+    /* =========================================================
+       ✅ CHECK IF WEEKEND ALREADY EXISTS FOR THIS ROUND
+    ========================================================= */
+
+    let raceWeekend = await RaceWeekend.findOne({
+      where: { seasonId, roundNumber: nextRound },
+    });
+
+    if (!raceWeekend) {
+      raceWeekend = await RaceWeekend.create({
+        seasonId,
+        roundNumber: nextRound,
+        weather: "Dry",
+        safetyCar: false,
+        redFlag: false,
+      });
+    }
+
+    /* =========================================================
+       SIMULATE RESULTS
+    ========================================================= */
 
     const drivers = await Driver.findAll({
       where: { isActive: true },
@@ -709,56 +707,48 @@ exports.simulateRace = async (req, res) => {
 
     const shuffled = shuffleArray(drivers);
 
-    const transaction = await sequelize.transaction();
+    await RaceResult.destroy({
+      where: { raceWeekendId: raceWeekend.id },
+    });
 
-    try {
-      // create weekend
-      const raceWeekend = await RaceWeekend.create(
-        {
-          seasonId,
-          roundNumber: nextRound,
-          weather: "Dry",
-          safetyCar: false,
-          redFlag: false,
-        },
-        { transaction },
-      );
+    const generatedResults = shuffled.map((driver, index) => ({
+      raceWeekendId: raceWeekend.id,
+      driverId: driver.id,
+      position: index + 1,
+      fastestLap: index === Math.floor(Math.random() * 10),
+      dnf: false,
+    }));
 
-      const generatedResults = shuffled.map((driver, index) => ({
-        raceWeekendId: raceWeekend.id,
-        driverId: driver.id,
-        position: index + 1,
-        fastestLap: index === Math.floor(Math.random() * 10),
-        dnf: false,
-      }));
+    await RaceResult.bulkCreate(generatedResults);
 
-      await RaceResult.bulkCreate(generatedResults, { transaction });
+    await updateMoraleAfterRace(generatedResults, Driver);
 
-      await updateMoraleAfterRace(generatedResults, Driver);
+    /* =========================================================
+       FINALIZE SEASON IF LAST ROUND
+    ========================================================= */
 
-      await transaction.commit();
+    let finale = null;
 
-      /* ===============================
-         ✅ SEASON FINALE CHECK
-      =============================== */
+    if (nextRound === season.raceCount) {
+      await season.update({ status: "completed" });
 
-      let finale = null;
+      const standings = await calculateDriverStandings(season.id);
+      const champion = standings[0];
 
-      if (nextRound === season.raceCount) {
-        finale = await finalizeSeasonIfNeeded(season);
-      }
-
-      return res.status(201).json({
-        message: "Race simulated successfully",
-        raceWeekendId: raceWeekend.id,
-        roundNumber: nextRound,
-        seasonCompleted: !!finale,
-        finale,
-      });
-    } catch (err) {
-      await transaction.rollback();
-      throw err;
+      finale = {
+        champion: champion.driverName,
+        points: champion.totalPoints,
+      };
     }
+
+    return res.status(201).json({
+      message: "Race simulated successfully",
+      raceWeekendId: raceWeekend.id,
+      roundNumber: nextRound,
+      seasonCompleted: !!finale,
+      finale,
+    });
+
   } catch (error) {
     console.error("simulateRace error:", error);
     res.status(500).json({ message: "Simulation failed" });
@@ -870,17 +860,17 @@ exports.getChampionshipSummary = async (req, res) => {
 
     res.json(summary);
   } catch (error) {
-    console.error("championshipSummary error:", error);
-    res.status(500).json({
-      message: "Failed to build summary",
-    });
-  }
+  console.error("championshipSummary error:", error);
+  res.status(500).json({
+    message: error.message,
+    stack: error.stack,
+  });
+}
 };
 
 //* =========================================================
 // GET LATEST RACE (FOR COMMENTARY FEED)
 //* =========================================================
-
 
 
 exports.getLatestRace = async (req, res) => {
@@ -889,15 +879,26 @@ exports.getLatestRace = async (req, res) => {
 
     const race = await RaceWeekend.findOne({
       where: { seasonId },
+      include: [
+        {
+          model: RaceResult,
+          required: true, // ensures only races with results
+        },
+      ],
       order: [["roundNumber", "DESC"]],
     });
 
-    if (!race)
-      return res.status(404).json({ message: "No races yet" });
+    if (!race) {
+      return res.status(404).json({
+        message: "No completed races yet",
+      });
+    }
 
     res.json(race);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to fetch latest race" });
+    console.error("getLatestRace error:", err);
+    res.status(500).json({
+      message: "Failed to fetch latest completed race",
+    });
   }
 };

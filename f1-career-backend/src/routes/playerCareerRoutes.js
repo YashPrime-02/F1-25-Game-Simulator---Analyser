@@ -1,5 +1,4 @@
-
-  const router = require("express").Router();
+const router = require("express").Router();
 const ctrl = require("../controllers/playerCareerController");
 const auth = require('../middleware/auth');
 
