@@ -56,6 +56,9 @@ function Sidebar() {
         <NavLink to="/drivers">Drivers</NavLink>
         <NavLink to="/Commentary">Commentary</NavLink>
         <NavLink to="/dashboard/championship">Championship</NavLink>
+        <NavLink to="/race/manual">Manually Feed Race Results </NavLink>
+
+        
 
         {latestRaceId && (
           <NavLink to={`/recap/${latestRaceId}`} className="sidebar-live">

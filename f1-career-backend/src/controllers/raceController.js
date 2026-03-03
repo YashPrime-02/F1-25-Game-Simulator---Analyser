@@ -72,17 +72,22 @@ exports.createRaceWeekend = async (req, res) => {
     }
 
     const season = await Season.findByPk(seasonId);
-    if (!season)
+    if (!season) {
       return res.status(404).json({ message: "Season not found" });
+    }
 
     const career = await Career.findOne({
       where: { id: season.careerId, userId: req.user.id },
     });
 
-    if (!career)
+    if (!career) {
       return res.status(403).json({ message: "Not authorized" });
+    }
 
-    /* ✅ Detect completed rounds properly */
+    /* =========================================================
+       DETECT COMPLETED ROUNDS (BASED ON RESULTS, NOT WEEKENDS)
+    ========================================================= */
+
     const completedRoundsRaw = await RaceResult.findAll({
       attributes: ["raceWeekendId"],
       include: [
@@ -95,7 +100,8 @@ exports.createRaceWeekend = async (req, res) => {
       group: ["raceWeekendId", "RaceWeekend.id"],
     });
 
-    const nextRound = completedRoundsRaw.length + 1;
+    const completedRounds = completedRoundsRaw.length;
+    const nextRound = completedRounds + 1;
 
     if (nextRound > season.raceCount) {
       return res.status(400).json({
@@ -103,17 +109,36 @@ exports.createRaceWeekend = async (req, res) => {
       });
     }
 
-    const existing = await RaceWeekend.findOne({
+    /* =========================================================
+       CHECK IF WEEKEND FOR THIS ROUND ALREADY EXISTS
+    ========================================================= */
+
+    let raceWeekend = await RaceWeekend.findOne({
       where: { seasonId, roundNumber: nextRound },
     });
 
-    if (existing) {
+    if (raceWeekend) {
+      // 🔎 Check if results already exist for this weekend
+      const existingResults = await RaceResult.findOne({
+        where: { raceWeekendId: raceWeekend.id },
+      });
+
+      if (!existingResults) {
+        // ✅ Weekend exists but race not run yet → reuse it
+        return res.status(200).json(raceWeekend);
+      }
+
+      // ❌ Results exist → round completed
       return res.status(400).json({
-        message: "Weekend already exists for this round",
+        message: "This round is already completed.",
       });
     }
 
-    const raceWeekend = await RaceWeekend.create({
+    /* =========================================================
+       CREATE NEW WEEKEND (ONLY IF NOT EXISTS)
+    ========================================================= */
+
+    raceWeekend = await RaceWeekend.create({
       seasonId,
       roundNumber: nextRound,
       weather: weather || "Dry",
@@ -122,11 +147,11 @@ exports.createRaceWeekend = async (req, res) => {
       notes,
     });
 
-    res.status(201).json(raceWeekend);
+    return res.status(201).json(raceWeekend);
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed creating weekend" });
+    console.error("createRaceWeekend error:", err);
+    return res.status(500).json({ message: "Failed creating weekend" });
   }
 };
 
@@ -148,13 +173,48 @@ exports.submitRaceResults = async (req, res) => {
 
   if (results.length !== 20) {
     return res.status(400).json({
-      message: "Exactly 20 results required (P1–P20)",
+      message: "Exactly 20 results required",
+    });
+  }
+
+  const positions = results.map(r => r.position);
+
+  // Position null check
+  if (positions.includes(null)) {
+    return res.status(400).json({
+      message: "All drivers must have a position",
+    });
+  }
+
+  // Range check
+  if (positions.some(p => p < 1 || p > 20)) {
+    return res.status(400).json({
+      message: "Positions must be between 1 and 20",
+    });
+  }
+
+  // Duplicate check
+  const uniquePositions = new Set(positions);
+  if (uniquePositions.size !== 20) {
+    return res.status(400).json({
+      message: "Duplicate positions detected",
+    });
+  }
+
+  // Fastest lap check
+  const fastestLapCount = results.filter(r => r.fastestLap).length;
+  if (fastestLapCount !== 1) {
+    return res.status(400).json({
+      message: "Exactly one fastest lap required",
     });
   }
 
   const raceWeekend = await RaceWeekend.findByPk(raceWeekendId);
-  if (!raceWeekend)
-    return res.status(404).json({ message: "Race weekend not found" });
+  if (!raceWeekend) {
+    return res.status(404).json({
+      message: "Race weekend not found",
+    });
+  }
 
   const transaction = await sequelize.transaction();
 
@@ -165,21 +225,42 @@ exports.submitRaceResults = async (req, res) => {
     });
 
     await RaceResult.bulkCreate(
-      results.map((r) => ({
+      results.map(r => ({
         raceWeekendId,
         driverId: r.driverId,
         position: r.position,
-        fastestLap: r.fastestLap || false,
+        fastestLap: r.fastestLap,
         dnf: r.dnf || false,
       })),
-      { transaction },
+      { transaction }
     );
 
-    // ✅ Morale system integration (SAFE ADDITION)
     await updateMoraleAfterRace(results, Driver);
 
+    // 🔥 Season completion logic
+    const season = await Season.findByPk(raceWeekend.seasonId);
+
+    const completedRoundsRaw = await RaceResult.findAll({
+      attributes: ["raceWeekendId"],
+      include: [
+        {
+          model: RaceWeekend,
+          where: { seasonId: season.id },
+          attributes: ["roundNumber"],
+        },
+      ],
+      group: ["raceWeekendId", "RaceWeekend.id"],
+      transaction,
+    });
+
+    if (completedRoundsRaw.length === season.raceCount) {
+      await season.update({ status: "completed" }, { transaction });
+    }
+
     await transaction.commit();
+
     res.json({ message: "Race results saved successfully" });
+
   } catch (err) {
     await transaction.rollback();
     console.error(err);
@@ -634,6 +715,8 @@ const finalizeSeasonIfNeeded = async (season) => {
 ========================================================= */
 
 exports.simulateRace = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
   try {
     const { seasonId } = req.body;
 
@@ -643,12 +726,18 @@ exports.simulateRace = async (req, res) => {
       });
     }
 
-    const season = await Season.findByPk(seasonId);
+    const season = await Season.findByPk(seasonId, { transaction });
     if (!season)
       return res.status(404).json({ message: "Season not found" });
 
+    if (season.status === "completed") {
+      return res.status(400).json({
+        message: "Season already completed",
+      });
+    }
+
     /* =========================================================
-       ✅ DETECT COMPLETED ROUNDS (BASED ON RESULTS, NOT WEEKENDS)
+       DETECT COMPLETED ROUNDS (BASED ON RESULTS)
     ========================================================= */
 
     const completedRoundsRaw = await RaceResult.findAll({
@@ -661,10 +750,10 @@ exports.simulateRace = async (req, res) => {
         },
       ],
       group: ["raceWeekendId", "RaceWeekend.id"],
+      transaction,
     });
 
     const completedRounds = completedRoundsRaw.length;
-
     const nextRound = completedRounds + 1;
 
     if (nextRound > season.raceCount) {
@@ -674,20 +763,40 @@ exports.simulateRace = async (req, res) => {
     }
 
     /* =========================================================
-       ✅ CHECK IF WEEKEND ALREADY EXISTS FOR THIS ROUND
+       GET OR CREATE WEEKEND
     ========================================================= */
 
     let raceWeekend = await RaceWeekend.findOne({
       where: { seasonId, roundNumber: nextRound },
+      transaction,
     });
 
     if (!raceWeekend) {
-      raceWeekend = await RaceWeekend.create({
-        seasonId,
-        roundNumber: nextRound,
-        weather: "Dry",
-        safetyCar: false,
-        redFlag: false,
+      raceWeekend = await RaceWeekend.create(
+        {
+          seasonId,
+          roundNumber: nextRound,
+          weather: "Dry",
+          safetyCar: false,
+          redFlag: false,
+        },
+        { transaction }
+      );
+    }
+
+    /* =========================================================
+       🔒 LOCK: PREVENT SIMULATION IF RESULTS EXIST
+    ========================================================= */
+
+    const existingResults = await RaceResult.findOne({
+      where: { raceWeekendId: raceWeekend.id },
+      transaction,
+    });
+
+    if (existingResults) {
+      await transaction.rollback();
+      return res.status(400).json({
+        message: "Race already has results. Manual entry was used.",
       });
     }
 
@@ -697,19 +806,17 @@ exports.simulateRace = async (req, res) => {
 
     const drivers = await Driver.findAll({
       where: { isActive: true },
+      transaction,
     });
 
     if (drivers.length !== 20) {
+      await transaction.rollback();
       return res.status(400).json({
         message: "Exactly 20 active drivers required",
       });
     }
 
     const shuffled = shuffleArray(drivers);
-
-    await RaceResult.destroy({
-      where: { raceWeekendId: raceWeekend.id },
-    });
 
     const generatedResults = shuffled.map((driver, index) => ({
       raceWeekendId: raceWeekend.id,
@@ -719,7 +826,7 @@ exports.simulateRace = async (req, res) => {
       dnf: false,
     }));
 
-    await RaceResult.bulkCreate(generatedResults);
+    await RaceResult.bulkCreate(generatedResults, { transaction });
 
     await updateMoraleAfterRace(generatedResults, Driver);
 
@@ -730,7 +837,7 @@ exports.simulateRace = async (req, res) => {
     let finale = null;
 
     if (nextRound === season.raceCount) {
-      await season.update({ status: "completed" });
+      await season.update({ status: "completed" }, { transaction });
 
       const standings = await calculateDriverStandings(season.id);
       const champion = standings[0];
@@ -741,6 +848,8 @@ exports.simulateRace = async (req, res) => {
       };
     }
 
+    await transaction.commit();
+
     return res.status(201).json({
       message: "Race simulated successfully",
       raceWeekendId: raceWeekend.id,
@@ -750,10 +859,12 @@ exports.simulateRace = async (req, res) => {
     });
 
   } catch (error) {
+    await transaction.rollback();
     console.error("simulateRace error:", error);
     res.status(500).json({ message: "Simulation failed" });
   }
 };
+
 /* =========================================================
    SIMULATE NEWS
 ========================================================= */
