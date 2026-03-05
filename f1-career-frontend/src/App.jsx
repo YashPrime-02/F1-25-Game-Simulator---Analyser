@@ -17,6 +17,7 @@ import PlayerCareerSetup from "./pages/player/PlayerCareerSetup";
 import ManualRaceEntry from "./pages/Race/ManualRaceEntry";
 import Constructors from "./pages/Constructors/Constructors";
 import TeammateDelta from "./pages/Constructors/TeammateDelta";
+import SeasonSummary from "./pages/SeasonSummary/SeasonSummary";
 import './App.css';
 
 function App() {
@@ -70,6 +71,7 @@ function App() {
             <Route path="/race/manual" element={<ManualRaceEntry />} />
             <Route path="/standings/constructors" element={<Constructors />} />
             <Route path="/standings/teammates" element={<TeammateDelta />} />
+            <Route path="/season-summary" element={<SeasonSummary />} />
           </Route>
         </Routes>
       </BrowserRouter>

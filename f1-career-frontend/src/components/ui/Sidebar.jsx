@@ -52,9 +52,8 @@ function Sidebar() {
       <nav>
         <NavLink to="/dashboard">Dashboard</NavLink>
         <NavLink to="/standings">Driver Standings</NavLink>
-
         <NavLink to="/standings/constructors">Constructors</NavLink>
-
+        <NavLink to="/season-summary">Season Summary</NavLink>
         <NavLink to="/standings/teammates">Teammate Battle</NavLink>
         <NavLink to="/dashboard/race-control">Race Center</NavLink>
         <NavLink to="/drivers">Drivers</NavLink>
