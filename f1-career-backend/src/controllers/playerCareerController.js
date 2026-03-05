@@ -1,4 +1,14 @@
-const { PlayerCareer, Driver, Team, sequelize } = require("../models");
+const {
+  sequelize,
+  PlayerCareer,
+  Driver,
+  Team,
+  Season,
+  RaceWeekend,
+  RaceResult,
+} = require("../models");
+
+const { calculateDriverStandings } = require("../services/championshipService");
 
 /*
 ====================================================
@@ -10,13 +20,8 @@ exports.createPlayerCareer = async (req, res) => {
   const transaction = await sequelize.transaction();
 
   try {
-    const {
-      driverId,
-      careerName,
-      teamId,
-      replacedDriverId,
-      customDriver,
-    } = req.body;
+    const { driverId, careerName, teamId, replacedDriverId, customDriver } =
+      req.body;
 
     /* ===============================
        SINGLE CAREER CHECK
@@ -87,10 +92,7 @@ exports.createPlayerCareer = async (req, res) => {
         });
       }
 
-      await replacedDriver.update(
-        { isActive: false },
-        { transaction }
-      );
+      await replacedDriver.update({ isActive: false }, { transaction });
     }
 
     /* ===============================
@@ -132,10 +134,6 @@ exports.createPlayerCareer = async (req, res) => {
     );
 
     await transaction.commit();
-
-    /* ===============================
-       RETURN POPULATED CAREER
-    =============================== */
 
     const populatedCareer = await PlayerCareer.findByPk(career.id, {
       include: [
@@ -183,6 +181,122 @@ exports.getPlayerCareer = async (req, res) => {
     console.error(err);
     res.status(500).json({
       message: "Failed fetching career",
+    });
+  }
+};
+
+/* =========================================================
+   PLAYER PROFILE
+========================================================= */
+
+exports.getPlayerProfile = async (req, res) => {
+  try {
+    const seasonId = Number(req.params.seasonId);
+
+    const season = await Season.findByPk(seasonId);
+    if (!season) {
+      return res.status(404).json({ message: "Season not found" });
+    }
+
+    const playerCareer = await PlayerCareer.findOne({
+      where: { userId: req.user.id },
+      include: [Driver, Team],
+    });
+
+    if (!playerCareer) {
+      return res.status(404).json({ message: "Player career not found" });
+    }
+
+    const playerDriverId = playerCareer.driverId;
+
+    /* ===============================
+       DRIVER STANDINGS
+    =============================== */
+
+    const standings = await calculateDriverStandings(seasonId);
+
+    const playerStanding = standings.find(
+      (s) => s.driverId === playerDriverId
+    );
+
+    const index = standings.findIndex(
+      (s) => s.driverId === playerDriverId
+    );
+
+    const position = index !== -1 ? index + 1 : null;
+    const points = playerStanding?.totalPoints || 0;
+
+    /* ===============================
+       PLAYER RACE RESULTS
+    =============================== */
+
+    const results = await RaceResult.findAll({
+      where: { driverId: playerDriverId },
+      include: [
+        {
+          model: RaceWeekend,
+          required: true,
+          where: { seasonId },
+          attributes: ["roundNumber"],
+        },
+      ],
+      order: [[RaceWeekend, "roundNumber", "ASC"]],
+    });
+
+    /* ===============================
+       RESULT STATS
+    =============================== */
+
+    const wins = results.filter(r => r.position === 1).length;
+    const podiums = results.filter(r => r.position <= 3).length;
+    const dnfs = results.filter(r => r.dnf).length;
+    const fastestLaps = results.filter(r => r.fastestLap).length;
+
+    const avgFinish =
+      results.length > 0
+        ? (
+            results.reduce((sum, r) => sum + r.position, 0) /
+            results.length
+          ).toFixed(2)
+        : null;
+
+    /* ===============================
+       GRAPH DATA
+    =============================== */
+
+    const raceHistory = results.map(r => ({
+      round: r.RaceWeekend.roundNumber,
+      position: r.position,
+    }));
+
+    /* ===============================
+       RESPONSE
+    =============================== */
+
+    res.json({
+      driver: {
+        name: `${playerCareer.Driver.firstName} ${playerCareer.Driver.lastName}`,
+        team: playerCareer.Team.name,
+        nationality: playerCareer.Driver.nationality,
+        number: playerCareer.Driver.driverNumber,
+        morale: playerCareer.Driver.morale,
+      },
+      stats: {
+        position,
+        points,
+        wins,
+        podiums,
+        dnfs,
+        fastestLaps,
+        avgFinish,
+      },
+      raceHistory,
+    });
+
+  } catch (err) {
+    console.error("playerProfile error:", err);
+    res.status(500).json({
+      message: "Failed to load player profile",
     });
   }
 };
