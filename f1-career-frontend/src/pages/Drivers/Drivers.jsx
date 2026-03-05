@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import api from "../../services/api";
 import "./Drivers.css";
+import useBackgroundAudio from "../../hooks/useBackgroundAudio";
+import f1Music from "../../assets/f1Drive.mp3";
 
 import {
   LineChart,
@@ -15,7 +17,15 @@ import {
 export default function DriverProfile() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-
+   /* ===============================
+      🎵 KEEP SOUND SYSTEM (UNCHANGED)
+   =============================== */
+ 
+   useBackgroundAudio(f1Music, {
+     volume: 0.35,
+     loop: true,
+   });
+ 
   useEffect(() => {
     const loadProfile = async () => {
       try {
@@ -42,6 +52,8 @@ export default function DriverProfile() {
 
   const { driver, stats, raceHistory } = data;
   console.log(raceHistory);
+
+  
   return (
     <div className="driver-profile-container">
       {/* DRIVER HEADER */}

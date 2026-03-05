@@ -2,7 +2,8 @@ import { useEffect,useState } from "react";
 import api from "../../services/api";
 import { useSeason } from "../../context/SeasonContext";
 import "./Combined.css";
-
+import useBackgroundAudio from "../../hooks/useBackgroundAudio";
+import f1Music from "../../assets/F1_theme.mp3";
 export default function TeammateDelta(){
 
   const { season } = useSeason();
@@ -21,6 +22,16 @@ export default function TeammateDelta(){
   const teamClass = (name) =>
     name.toLowerCase().replace(/[^a-z]/g,"");
 
+
+    /* ===============================
+       🎵 KEEP SOUND SYSTEM (UNCHANGED)
+    =============================== */
+  
+    useBackgroundAudio(f1Music, {
+      volume: 0.35,
+      loop: true,
+    });
+  
   return(
 
     <div className="teammate-page">
