@@ -15,7 +15,10 @@ import ChampionshipPage from "./pages/Championship/Championship";
 import RaceRecap from "./pages/RaceRecap/RaceRecap";
 import PlayerCareerSetup from "./pages/player/PlayerCareerSetup";
 import ManualRaceEntry from "./pages/Race/ManualRaceEntry";
+import Constructors from "./pages/Constructors/Constructors";
+import TeammateDelta from "./pages/Constructors/TeammateDelta";
 import './App.css';
+
 function App() {
   return (
     <ThemeProvider>
@@ -55,10 +58,18 @@ function App() {
             <Route path="/drivers" element={<Drivers />} />
             <Route path="/Commentary" element={<Commentary />} />
             <Route path="/dashboard/race-control" element={<RaceControl />} />
-            <Route path="/dashboard/championship" element={<ChampionshipPage />}/>
+            <Route
+              path="/dashboard/championship"
+              element={<ChampionshipPage />}
+            />
             <Route path="/recap/:raceWeekendId" element={<RaceRecap />} />
-            <Route path="/player-career/setup" element={<PlayerCareerSetup />} />
+            <Route
+              path="/player-career/setup"
+              element={<PlayerCareerSetup />}
+            />
             <Route path="/race/manual" element={<ManualRaceEntry />} />
+            <Route path="/standings/constructors" element={<Constructors />} />
+            <Route path="/standings/teammates" element={<TeammateDelta />} />
           </Route>
         </Routes>
       </BrowserRouter>

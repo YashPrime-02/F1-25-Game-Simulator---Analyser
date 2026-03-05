@@ -36,6 +36,7 @@ app.use('/api/races', raceRoutes);
 app.use("/api/player-career", playerCareerRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/drivers", driverRoutes);
+app.use("/api/standings",require("./routes/standingRoutes"));
 
 // Health check
 app.get('/health', (req, res) =>

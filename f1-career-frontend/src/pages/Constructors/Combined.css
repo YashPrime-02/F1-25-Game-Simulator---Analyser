@@ -1,0 +1,289 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Titillium+Web:wght@400;600&display=swap');
+
+.constructors-page,
+.teammate-page{
+
+padding:40px;
+background:radial-gradient(circle,#0f0f0f,#030303);
+color:white;
+font-family:"Titillium Web",sans-serif;
+min-height:100vh;
+
+}
+
+h2{
+
+font-size:30px;
+margin-bottom:35px;
+position:relative;
+
+}
+
+h2::after{
+
+content:"";
+position:absolute;
+left:0;
+bottom:-10px;
+width:80px;
+height:3px;
+background:#e10600;
+box-shadow:0 0 10px #e10600;
+
+}
+
+/* TABLE */
+
+table{
+
+width:100%;
+border-collapse:collapse;
+background:#111;
+border-radius:10px;
+overflow:hidden;
+
+}
+
+th{
+
+padding:18px;
+color:#888;
+font-size:13px;
+
+}
+
+td{
+
+padding:18px;
+border-bottom:1px solid rgba(255,255,255,.05);
+
+}
+
+.team-row:hover{
+
+background:rgba(255,255,255,.03);
+transform:scale(1.01);
+
+}
+
+/* PODIUM */
+
+.team-row:nth-child(1){
+
+background:linear-gradient(90deg,#3b2d00,#111);
+box-shadow:inset 6px 0 gold;
+
+}
+
+.team-row:nth-child(2){
+
+background:linear-gradient(90deg,#2a2a2a,#111);
+box-shadow:inset 6px 0 silver;
+
+}
+
+.team-row:nth-child(3){
+
+background:linear-gradient(90deg,#3a1f00,#111);
+box-shadow:inset 6px 0 #cd7f32;
+
+}
+
+
+.team-row{
+
+transition:
+transform .6s cubic-bezier(.22,.61,.36,1),
+background .3s;
+
+}
+
+.team-logo{
+width:30px;
+margin-right:10px;
+vertical-align:middle;
+filter:drop-shadow(0 0 4px rgba(255,255,255,0.4));
+}
+/* DRIVER */
+
+.driver-line{
+
+display:flex;
+justify-content:space-between;
+font-size:14px;
+
+}
+
+.driver-points{
+
+font-family:"Orbitron";
+margin-left:8px;
+
+}
+
+/* PROGRESS BAR */
+
+.points-cell{
+
+min-width:180px;
+
+}
+
+.points-value{
+
+font-family:"Orbitron";
+margin-bottom:6px;
+
+}
+
+.points-bar{
+
+height:6px;
+background:#222;
+border-radius:6px;
+overflow:hidden;
+
+}
+
+.points-fill{
+
+height:100%;
+background:linear-gradient(90deg,#e10600,#ff3b3b);
+animation:barGrow 1s ease;
+
+}
+
+@keyframes barGrow{
+
+from{width:0;}
+
+}
+
+/* TEAMMATE */
+
+.teammate-page{
+
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+gap:24px;
+
+}
+
+.team-card{
+
+padding:22px;
+border-radius:12px;
+background:#111;
+border:1px solid rgba(255,255,255,.06);
+transition:.4s;
+position:relative;
+overflow:hidden;
+
+}
+
+.team-card:hover{
+
+transform:translateY(-8px);
+box-shadow:0 20px 45px rgba(0,0,0,.8);
+
+}
+
+.team-card::after{
+
+content:"";
+position:absolute;
+left:-120%;
+top:0;
+width:120%;
+height:100%;
+background:linear-gradient(
+120deg,
+transparent,
+rgba(255,255,255,.08),
+transparent
+);
+animation:telemetry 6s linear infinite;
+
+}
+
+@keyframes telemetry{
+
+from{left:-120%}
+to{left:120%}
+
+}
+
+/* DELTA */
+
+.delta{
+
+color:#e10600;
+font-family:"Orbitron";
+animation:pulse 1.6s infinite;
+
+}
+
+@keyframes pulse{
+
+0%{opacity:.6}
+50%{opacity:1;text-shadow:0 0 10px #e10600}
+100%{opacity:.6}
+
+}
+
+/* TEAM COLORS */
+
+/* ================= TEAM COLORS ================= */
+
+/* Ferrari */
+.ferrari{
+border-left:5px solid #dc0000;
+}
+
+/* Red Bull */
+.redbull,
+.redbullracing{
+border-left:5px solid #1e41ff;
+}
+
+/* Mercedes */
+.mercedes{
+border-left:5px solid #00d2be;
+}
+
+/* McLaren */
+.mclaren{
+border-left:5px solid #ff8700;
+}
+
+/* Aston Martin */
+.astonmartin{
+border-left:5px solid #006f62;
+}
+
+/* Alpine */
+.alpine{
+border-left:5px solid #0090ff;
+}
+
+/* Williams */
+.williams{
+border-left:5px solid #005aff;
+}
+
+/* Haas */
+.haas{
+border-left:5px solid #ffffff;
+}
+
+/* RB / Racing Bulls */
+.rb,
+.racingbulls{
+border-left:5px solid #2b4562;
+}
+
+/* Sauber / Kick Sauber */
+.sauber,
+.kicksauber{
+border-left:5px solid #52e252;
+}

@@ -48,17 +48,18 @@ function Sidebar() {
         {collapsed ? "F1" : "F1 SIM"}
       </div>
 
-
       <nav>
         <NavLink to="/dashboard">Dashboard</NavLink>
-        <NavLink to="/standings">Standings</NavLink>
+        <NavLink to="/standings">Driver Standings</NavLink>
+
+        <NavLink to="/standings/constructors">Constructors</NavLink>
+
+        <NavLink to="/standings/teammates">Teammate Battle</NavLink>
         <NavLink to="/dashboard/race-control">Race Center</NavLink>
         <NavLink to="/drivers">Drivers</NavLink>
         <NavLink to="/Commentary">Commentary</NavLink>
         <NavLink to="/dashboard/championship">Championship</NavLink>
         <NavLink to="/race/manual">Manually Feed Race Results </NavLink>
-
-        
 
         {latestRaceId && (
           <NavLink to={`/recap/${latestRaceId}`} className="sidebar-live">
