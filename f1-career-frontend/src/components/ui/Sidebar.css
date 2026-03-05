@@ -10,16 +10,52 @@
   overflow: hidden;
 }
 
+/* Sidebar Logo */
+
 .logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
   font-weight: 800;
-  font-size: 22px;
+  font-size: 20px;
+
   color: var(--accent-red);
+
   margin-bottom: 40px;
-  letter-spacing: 3px;
+
+  letter-spacing: 2px;
+
   cursor: pointer;
+
   text-shadow: var(--glow-red);
+
+  transition: 0.3s;
 }
 
+/* logo image */
+
+.logo-icon {
+  width: 56px;
+  height: 56px;
+
+  object-fit: contain;
+
+  filter: drop-shadow(0 0 6px rgba(225, 6, 0, 0.6));
+}
+
+/* text */
+
+.logo-text {
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+/* hover effect */
+
+.logo:hover {
+  transform: scale(1.05);
+}
 nav {
   display: flex;
   flex-direction: column;
@@ -69,7 +105,13 @@ nav a.active {
 }
 
 @keyframes pulseLive {
-  0% { box-shadow: 0 0 0px rgba(255,0,0,0.4); }
-  50% { box-shadow: 0 0 12px rgba(255,0,0,0.8); }
-  100% { box-shadow: 0 0 0px rgba(255,0,0,0.4); }
+  0% {
+    box-shadow: 0 0 0px rgba(255, 0, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(255, 0, 0, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 0px rgba(255, 0, 0, 0.4);
+  }
 }

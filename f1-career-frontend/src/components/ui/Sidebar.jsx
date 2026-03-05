@@ -44,10 +44,11 @@ function Sidebar() {
       transition={{ duration: 0.3 }}
       className="sidebar"
     >
-      <div className="logo" onClick={() => setCollapsed(!collapsed)}>
-        {collapsed ? "F1" : "F1 SIM"}
-      </div>
+      <div className="logo">
+        <img src="/F1-Favicon.png" alt="F1 Logo" className="logo-icon" />
 
+        {!collapsed && <span className="logo-text">F1 25 SIM</span>}
+      </div>
       <nav>
         <NavLink to="/dashboard">Dashboard</NavLink>
         <NavLink to="/standings">Driver Standings</NavLink>
