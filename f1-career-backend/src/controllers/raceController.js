@@ -704,9 +704,11 @@ const finalizeSeasonIfNeeded = async (season) => {
 ========================================================= */
 
 exports.simulateRace = async (req, res) => {
+
   const transaction = await sequelize.transaction();
 
   try {
+
     const { seasonId } = req.body;
 
     if (!seasonId) {
@@ -717,7 +719,8 @@ exports.simulateRace = async (req, res) => {
 
     const season = await Season.findByPk(seasonId, { transaction });
 
-    if (!season) return res.status(404).json({ message: "Season not found" });
+    if (!season)
+      return res.status(404).json({ message: "Season not found" });
 
     if (season.status === "completed") {
       return res.status(400).json({
@@ -726,7 +729,7 @@ exports.simulateRace = async (req, res) => {
     }
 
     /* =========================================================
-       DETECT COMPLETED ROUNDS (BASED ON RESULTS)
+       DETECT COMPLETED ROUNDS
     ========================================================= */
 
     const completedRoundsRaw = await RaceResult.findAll({
@@ -761,6 +764,7 @@ exports.simulateRace = async (req, res) => {
     });
 
     if (!raceWeekend) {
+
       raceWeekend = await RaceWeekend.create(
         {
           seasonId,
@@ -769,12 +773,13 @@ exports.simulateRace = async (req, res) => {
           safetyCar: false,
           redFlag: false,
         },
-        { transaction },
+        { transaction }
       );
+
     }
 
     /* =========================================================
-       LOCK: PREVENT SIMULATION IF RESULTS EXIST
+       PREVENT DOUBLE RESULTS
     ========================================================= */
 
     const existingResults = await RaceResult.findOne({
@@ -783,10 +788,13 @@ exports.simulateRace = async (req, res) => {
     });
 
     if (existingResults) {
+
       await transaction.rollback();
+
       return res.status(400).json({
-        message: "Race already has results. Manual entry was used.",
+        message: "Race already has results",
       });
+
     }
 
     /* =========================================================
@@ -799,10 +807,13 @@ exports.simulateRace = async (req, res) => {
     });
 
     if (drivers.length !== 20) {
+
       await transaction.rollback();
+
       return res.status(400).json({
         message: "Exactly 20 active drivers required",
       });
+
     }
 
     const shuffled = shuffleArray(drivers);
@@ -820,22 +831,48 @@ exports.simulateRace = async (req, res) => {
     await updateMoraleAfterRace(generatedResults, Driver);
 
     /* =========================================================
-       FINALIZE SEASON IF LAST ROUND
+       FINALIZE SEASON
     ========================================================= */
 
     let finale = null;
 
     if (nextRound === season.raceCount) {
+
       const standings = await calculateDriverStandings(season.id);
+
+      if (!standings || standings.length === 0) {
+        throw new Error("Standings not generated");
+      }
+
       const champion = standings[0];
+
+      const championDriver = await Driver.findByPk(champion.driverId, {
+        transaction,
+      });
+
+      const championName =
+        championDriver.firstName + " " + championDriver.lastName;
+
+      const championTeamId = championDriver.teamId;
+
+      const championTeam = await Team.findByPk(championTeamId, {
+        transaction,
+      });
+
+      const constructorName = championTeam?.name || "Unknown";
+
+      /* ===== UPDATE SEASON ===== */
 
       await season.update(
         {
           status: "completed",
           driverChampionId: champion.driverId,
+          constructorChampionId: championTeamId,
         },
-        { transaction },
+        { transaction }
       );
+
+      /* ===== CREATE NEXT SEASON ===== */
 
       const nextSeason = await Season.create(
         {
@@ -845,10 +882,11 @@ exports.simulateRace = async (req, res) => {
           raceCount: season.raceCount,
           status: "active",
         },
-        { transaction },
+        { transaction }
       );
 
-      // Copy calendar
+      /* ===== COPY CALENDAR ===== */
+
       const calendar = await SeasonCalendar.findAll({
         where: { seasonId: season.id },
         transaction,
@@ -861,7 +899,17 @@ exports.simulateRace = async (req, res) => {
       }));
 
       await SeasonCalendar.bulkCreate(newCalendar, { transaction });
+
+      /* ===== RESPONSE ===== */
+
+      finale = {
+        champion: championName,
+        constructor: constructorName,
+        points: champion.totalPoints,
+        nextSeasonId: nextSeason.id,
+      };
     }
+
     await transaction.commit();
 
     return res.status(201).json({
@@ -871,7 +919,9 @@ exports.simulateRace = async (req, res) => {
       seasonCompleted: !!finale,
       finale,
     });
+
   } catch (error) {
+
     await transaction.rollback();
 
     console.error("simulateRace error:", error);
@@ -879,6 +929,7 @@ exports.simulateRace = async (req, res) => {
     res.status(500).json({
       message: "Simulation failed",
     });
+
   }
 };
 

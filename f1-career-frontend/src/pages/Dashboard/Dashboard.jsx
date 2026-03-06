@@ -158,7 +158,7 @@ export default function Dashboard() {
       {/* ================= LIVE COMMENTARY TICKER ================= */}
       {commentary.length > 0 && (
         <div className="broadcast-main commentary-panel">
-          <h2>🎙 Live Commentary Feed</h2>
+          <h2>🎙 Last Race Commentary Feed</h2>
 
           <div className="ticker">
             <div className="ticker-text">
