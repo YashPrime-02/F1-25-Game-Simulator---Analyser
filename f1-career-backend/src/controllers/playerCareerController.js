@@ -192,6 +192,7 @@ exports.getPlayerCareer = async (req, res) => {
 exports.getPlayerProfile = async (req, res) => {
   try {
     const seasonId = Number(req.params.seasonId);
+    const careerMode = req.query.career === "true";
 
     const season = await Season.findByPk(seasonId);
     if (!season) {
@@ -209,9 +210,24 @@ exports.getPlayerProfile = async (req, res) => {
 
     const playerDriverId = playerCareer.driverId;
 
-    /* ===============================
-       DRIVER STANDINGS
-    =============================== */
+    /* ======================================
+       DETERMINE SEASONS TO INCLUDE
+    ====================================== */
+
+    let seasonIds = [seasonId];
+
+    if (careerMode) {
+      const seasons = await Season.findAll({
+        where: { careerId: season.careerId },
+        attributes: ["id"],
+      });
+
+      seasonIds = seasons.map(s => s.id);
+    }
+
+    /* ======================================
+       DRIVER STANDINGS (CURRENT SEASON ONLY)
+    ====================================== */
 
     const standings = await calculateDriverStandings(seasonId);
 
@@ -226,9 +242,9 @@ exports.getPlayerProfile = async (req, res) => {
     const position = index !== -1 ? index + 1 : null;
     const points = playerStanding?.totalPoints || 0;
 
-    /* ===============================
-       PLAYER RACE RESULTS
-    =============================== */
+    /* ======================================
+       FETCH RESULTS (MULTI SEASON SAFE)
+    ====================================== */
 
     const results = await RaceResult.findAll({
       where: { driverId: playerDriverId },
@@ -236,16 +252,19 @@ exports.getPlayerProfile = async (req, res) => {
         {
           model: RaceWeekend,
           required: true,
-          where: { seasonId },
-          attributes: ["roundNumber"],
+          where: { seasonId: seasonIds },
+          attributes: ["roundNumber", "seasonId"],
         },
       ],
-      order: [[RaceWeekend, "roundNumber", "ASC"]],
+      order: [
+        [RaceWeekend, "seasonId", "ASC"],
+        [RaceWeekend, "roundNumber", "ASC"],
+      ],
     });
 
-    /* ===============================
-       RESULT STATS
-    =============================== */
+    /* ======================================
+       RESULT STATS (CAREER)
+    ====================================== */
 
     const wins = results.filter(r => r.position === 1).length;
     const podiums = results.filter(r => r.position <= 3).length;
@@ -260,18 +279,18 @@ exports.getPlayerProfile = async (req, res) => {
           ).toFixed(2)
         : null;
 
-    /* ===============================
-       GRAPH DATA
-    =============================== */
+    /* ======================================
+       GRAPH DATA (SEASON + ROUND)
+    ====================================== */
 
     const raceHistory = results.map(r => ({
-      round: r.RaceWeekend.roundNumber,
+      round: `S${r.RaceWeekend.seasonId}-R${r.RaceWeekend.roundNumber}`,
       position: r.position,
     }));
 
-    /* ===============================
+    /* ======================================
        RESPONSE
-    =============================== */
+    ====================================== */
 
     res.json({
       driver: {
