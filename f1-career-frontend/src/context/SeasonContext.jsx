@@ -1,57 +1,128 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { fetchActiveSeason } from "../services/seasonService";
-import { fetchLatestRace } from "../services/raceService"; // ✅ ADDED
+import { fetchActiveSeason, fetchAllSeasons } from "../services/seasonService";
+import { fetchLatestRace } from "../services/raceService";
 
 const SeasonContext = createContext();
 
 export function SeasonProvider({ children }) {
+
   const [season, setSeason] = useState(null);
+  const [seasons, setSeasons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [latestRaceId, setLatestRaceId] = useState(null);
 
-  useEffect(() => {
-    const loadSeason = async () => {
+  const loadSeason = async () => {
+
+    try {
+
+      setLoading(true);
+
+      /* ===============================
+         LOAD ALL SEASONS (dropdown)
+      =============================== */
+
+      const allSeasons = await fetchAllSeasons();
+
+      setSeasons(allSeasons || []);
+
+      let selectedSeason = null;
+
+      /* ===============================
+         TRY FETCH ACTIVE SEASON
+      =============================== */
+
       try {
-        const data = await fetchActiveSeason();
-        setSeason(data);
 
-        // ✅ FETCH LATEST RACE (SAFE ADDITION)
-        if (data?.id) {
-          try {
-            const latestRace = await fetchLatestRace(data.id);
+        const active = await fetchActiveSeason();
 
-            if (latestRace?.id) {
-              setLatestRaceId(latestRace.id);
-            }
-          } catch (err) {
-            // no races yet → silently ignore
-            console.log("No latest race available");
-          }
+        if (active) {
+          selectedSeason = active;
         }
 
       } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+
+        // 404 is expected when no active season exists
+        console.log("No active season from API");
+
       }
-    };
+
+      /* ===============================
+         FALLBACK → LATEST SEASON
+      =============================== */
+
+      if (!selectedSeason && allSeasons?.length > 0) {
+
+        selectedSeason = allSeasons[allSeasons.length - 1];
+
+      }
+
+      setSeason(selectedSeason);
+
+      /* ===============================
+         FETCH LATEST RACE
+      =============================== */
+
+      if (selectedSeason?.id) {
+
+        try {
+
+          const latestRace = await fetchLatestRace(selectedSeason.id);
+
+          if (latestRace?.id) {
+            setLatestRaceId(latestRace.id);
+          } else {
+            setLatestRaceId(null);
+          }
+
+        } catch {
+
+          setLatestRaceId(null);
+
+        }
+
+      }
+
+    } catch (err) {
+
+      console.error("Season loading failed:", err);
+
+      setSeason(null);
+      setSeasons([]);
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
+  };
+
+  useEffect(() => {
 
     loadSeason();
+
   }, []);
 
   return (
+
     <SeasonContext.Provider
       value={{
         season,
+        seasons,
         loading,
         latestRaceId,
         setLatestRaceId,
         setSeason,
+        reloadSeason: loadSeason
       }}
     >
+
       {children}
+
     </SeasonContext.Provider>
+
   );
+
 }
 
 export const useSeason = () => useContext(SeasonContext);

@@ -1,6 +1,15 @@
 import api from "./api";
 
 export const fetchActiveSeason = async () => {
-  const response = await api.get("/seasons/active");
-  return response.data;
+
+  const res = await api.get("/season/active");
+  return res.data;
+
+};
+
+export const fetchAllSeasons = async () => {
+
+  const res = await api.get("/season");
+  return res.data;
+
 };

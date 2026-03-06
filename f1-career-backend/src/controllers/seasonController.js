@@ -5,87 +5,68 @@ const {
   SeasonCalendar,
   Career,
   sequelize,
-} = require('../models');
+} = require("../models");
 
-/**
- * CREATE SEASON
- */
+const { calculateDriverStandings } = require("../services/championshipService");
+const { Op } = require("sequelize");
+
+
+/* ======================================================
+   CREATE SEASON
+====================================================== */
+
 exports.createSeason = async (req, res) => {
-  const { careerId, trackIds } = req.body;
-
-  // Basic validation
-  if (!careerId || !Array.isArray(trackIds) || trackIds.length === 0) {
-    return res.status(400).json({
-      message: 'careerId and non-empty trackIds array required',
-    });
-  }
-
-  // Max 24 races rule
-  if (trackIds.length > 24) {
-    return res.status(400).json({
-      message: 'Maximum 24 races allowed',
-    });
-  }
-
-  // Prevent duplicate tracks
-  const uniqueTrackIds = [...new Set(trackIds)];
-  if (uniqueTrackIds.length !== trackIds.length) {
-    return res.status(400).json({
-      message: 'Duplicate tracks not allowed in calendar',
-    });
-  }
-
-  // Validate career ownership
-  const career = await Career.findOne({
-    where: { id: careerId, userId: req.user.id },
-  });
-
-  if (!career) {
-    return res.status(403).json({
-      message: 'Career not found or not owned by user',
-    });
-  }
-
-  // Get last season
-  const lastSeason = await Season.findOne({
-    where: { careerId },
-    order: [['seasonNumber', 'DESC']],
-  });
-
-  // Prevent new season if previous is still active
-  if (lastSeason && lastSeason.status === 'active') {
-    return res.status(400).json({
-      message:
-        'Complete the current season before starting a new one',
-    });
-  }
-
-  const nextSeasonNumber = lastSeason
-    ? lastSeason.seasonNumber + 1
-    : 1;
-
-  const nextYear = lastSeason
-    ? lastSeason.year + 1
-    : 2025;
-
-  const raceCount = trackIds.length;
-
-  const transaction = await sequelize.transaction();
-
   try {
-    // Create season
+
+    const { careerId, trackIds } = req.body;
+
+    if (!careerId || !Array.isArray(trackIds) || !trackIds.length) {
+      return res.status(400).json({
+        message: "careerId and trackIds required",
+      });
+    }
+
+    const career = await Career.findOne({
+      where: { id: careerId, userId: req.user.id },
+    });
+
+    if (!career)
+      return res.status(403).json({
+        message: "Career not owned by user",
+      });
+
+    const lastSeason = await Season.findOne({
+      where: { careerId },
+      order: [["seasonNumber", "DESC"]],
+    });
+
+    if (lastSeason && lastSeason.status === "active") {
+      return res.status(400).json({
+        message: "Finish current season first",
+      });
+    }
+
+    const nextSeasonNumber = lastSeason
+      ? lastSeason.seasonNumber + 1
+      : 1;
+
+    const nextYear = lastSeason
+      ? lastSeason.year + 1
+      : 2025;
+
+    const transaction = await sequelize.transaction();
+
     const season = await Season.create(
       {
         careerId,
         seasonNumber: nextSeasonNumber,
         year: nextYear,
-        raceCount,
-        status: 'active',
+        raceCount: trackIds.length,
+        status: "active",
       },
       { transaction }
     );
 
-    // Insert calendar entries
     const calendarEntries = trackIds.map((trackId, index) => ({
       seasonId: season.id,
       trackId,
@@ -98,121 +79,77 @@ exports.createSeason = async (req, res) => {
 
     await transaction.commit();
 
-    return res.status(201).json({
-      message: 'Season created successfully',
-      seasonId: season.id,
-      seasonNumber: nextSeasonNumber,
-      year: nextYear,
-      raceCount,
-    });
+    res.status(201).json(season);
+
   } catch (err) {
-    await transaction.rollback();
+
     console.error(err);
-    return res.status(500).json({
-      message: 'Failed to create season',
+    res.status(500).json({
+      message: "Season creation failed",
     });
+
   }
 };
 
-/**
- * GET SEASON WITH CALENDAR
- */
-exports.getSeasonById = async (req, res) => {
-  const { seasonId } = req.params;
+/* ======================================================
+   GET ALL SEASONS (FOR DROPDOWN)
+====================================================== */
 
-  const season = await Season.findByPk(seasonId);
+exports.getAllSeasons = async (req, res) => {
 
-  if (!season) {
-    return res.status(404).json({ message: 'Season not found' });
-  }
+  try {
 
-  // Validate ownership
-  const career = await Career.findOne({
-    where: {
-      id: season.careerId,
-      userId: req.user.id,
-    },
-  });
-
-  if (!career) {
-    return res.status(403).json({ message: 'Not authorized' });
-  }
-
-  const calendar = await SeasonCalendar.findAll({
-    where: { seasonId },
-    order: [['roundNumber', 'ASC']],
-  });
-
-  return res.json({
-    season,
-    calendar,
-  });
-};
-
-/**
- * COMPLETE SEASON
- */
-exports.completeSeason = async (req, res) => {
-  const { seasonId } = req.params;
-
-  const season = await Season.findByPk(seasonId);
-
-  if (!season) {
-    return res.status(404).json({ message: 'Season not found' });
-  }
-
-  const career = await Career.findOne({
-    where: {
-      id: season.careerId,
-      userId: req.user.id,
-    },
-  });
-
-  if (!career) {
-    return res.status(403).json({ message: 'Not authorized' });
-  }
-
-  if (season.status === 'completed') {
-    return res.status(400).json({
-      message: 'Season already completed',
+    const careers = await Career.findAll({
+      where: { userId: req.user.id }
     });
+
+    const careerIds = careers.map(c => c.id);
+
+    const seasons = await Season.findAll({
+      where: {
+        careerId: { [Op.in]: careerIds }
+      },
+      order: [["seasonNumber","ASC"]]
+    });
+
+    res.json(seasons);
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      message: "Failed fetching seasons"
+    });
+
   }
 
-  season.status = 'completed';
-  await season.save();
-
-  return res.json({
-    message: 'Season marked as completed',
-  });
 };
+/* ======================================================
+   GET ACTIVE SEASON
+====================================================== */
 
 
 exports.getActiveSeason = async (req, res) => {
   try {
-    if (!req.user?.id) {
-      return res.status(401).json({
-        message: "Unauthorized",
-      });
-    }
 
-    const userId = req.user.id;
-    console.log("AUTH USER ID:", userId);
-
-    // 🔥 Step 1: find ALL careers of this user
     const careers = await Career.findAll({
-      where: { userId },
+      where: { userId: req.user.id },
     });
 
     if (!careers.length) {
       return res.status(404).json({
-        message: "No career found for this user",
+        message: "No career found",
       });
     }
 
-    const careerIds = careers.map((c) => c.id);
+    const careerIds = careers.map(c => c.id);
 
-    // 🔥 Step 2: find active season belonging to ANY of those careers
-    const season = await Season.findOne({
+    /* ===============================
+       1️⃣ TRY FIND ACTIVE SEASON
+    =============================== */
+
+    let season = await Season.findOne({
       where: {
         careerId: careerIds,
         status: "active",
@@ -220,59 +157,138 @@ exports.getActiveSeason = async (req, res) => {
       order: [["seasonNumber", "DESC"]],
     });
 
+    /* ===============================
+       2️⃣ IF NONE ACTIVE → CREATE NEXT
+    =============================== */
+
     if (!season) {
-      return res.status(404).json({
-        message: "No active season found",
+
+      const lastSeason = await Season.findOne({
+        where: { careerId: careerIds },
+        order: [["seasonNumber", "DESC"]],
       });
+
+      if (!lastSeason) {
+        return res.status(404).json({
+          message: "No seasons exist",
+        });
+      }
+
+      season = await Season.create({
+        careerId: lastSeason.careerId,
+        seasonNumber: lastSeason.seasonNumber + 1,
+        year: lastSeason.year + 1,
+        raceCount: lastSeason.raceCount,
+        status: "active",
+      });
+
     }
 
-    return res.status(200).json(season);
+    res.json(season);
 
-  } catch (error) {
-    console.error("getActiveSeason error:", error);
-    return res.status(500).json({
-      message: "Server error",
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      message: "Failed fetching active season",
     });
+
   }
 };
 
-/* =========================================================
-   FINALIZE SEASON
-========================================================= */
-exports.finalizeSeason = async (req, res) => {
+/* ======================================================
+   GET SEASON + CALENDAR
+====================================================== */
+
+exports.getSeasonById = async (req, res) => {
+
   try {
+
     const { seasonId } = req.params;
 
     const season = await Season.findByPk(seasonId);
+
     if (!season)
-      return res.status(404).json({ message: "Season not found" });
-
-    if (season.status === "completed") {
-      return res.json({ message: "Season already completed" });
-    }
-
-    // get standings using existing logic
-    const standings = await calculateDriverStandings(seasonId);
-
-    if (!standings.length) {
-      return res.status(400).json({
-        message: "No standings available",
+      return res.status(404).json({
+        message: "Season not found",
       });
-    }
 
-    const champion = standings[0];
-
-    await season.update({
-      status: "completed",
+    const calendar = await SeasonCalendar.findAll({
+      where: { seasonId },
+      order: [["roundNumber", "ASC"]],
     });
 
     res.json({
-      message: "Season finalized",
-      champion,
+      season,
+      calendar,
     });
 
-  } catch (error) {
-    console.error("finalizeSeason error:", error);
-    res.status(500).json({ message: "Failed to finalize season" });
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      message: "Failed fetching season",
+    });
+
   }
+
+};
+
+/* ======================================================
+   COMPLETE SEASON + AUTO CREATE NEXT
+====================================================== */
+
+exports.completeSeason = async (req, res) => {
+
+  try {
+
+    const { seasonId } = req.params;
+
+    const season = await Season.findByPk(seasonId);
+
+    if (!season)
+      return res.status(404).json({
+        message: "Season not found",
+      });
+
+    if (season.status === "completed")
+      return res.json({
+        message: "Season already completed",
+      });
+
+    const standings = await calculateDriverStandings(season.id);
+
+    const champion = standings?.[0];
+
+    await season.update({
+      status: "completed",
+      driverChampionId: champion?.driverId || null,
+    });
+
+    const nextSeason = await Season.create({
+      careerId: season.careerId,
+      seasonNumber: season.seasonNumber + 1,
+      year: season.year + 1,
+      raceCount: season.raceCount,
+      status: "active",
+    });
+
+    res.json({
+      message: "Season completed",
+      champion,
+      nextSeason,
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      message: "Season completion failed",
+    });
+
+  }
+
 };

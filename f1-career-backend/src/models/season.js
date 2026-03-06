@@ -2,7 +2,7 @@
 
 module.exports = (sequelize, DataTypes) => {
   const Season = sequelize.define(
-    'Season',
+    "Season",
     {
       id: {
         type: DataTypes.INTEGER,
@@ -21,20 +21,32 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
+
       raceCount: {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
+
+      driverChampionId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+
+      constructorChampionId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+
       status: {
         type: DataTypes.STRING(50),
         allowNull: false,
-        defaultValue: 'active',
+        defaultValue: "active",
       },
     },
     {
-      tableName: 'seasons',
+      tableName: "seasons",
       timestamps: true,
-    }
+    },
   );
 
   return Season;

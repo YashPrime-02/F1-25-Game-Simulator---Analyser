@@ -156,3 +156,135 @@
 .mute-btn:not(.muted) {
   box-shadow: 0 0 12px rgba(225,6,0,0.35);
 }
+
+
+/* =========================
+   SEASON DROPDOWN
+========================= */
+
+.season-dropdown{
+
+appearance:none;
+-webkit-appearance:none;
+-moz-appearance:none;
+
+padding:10px 42px 10px 16px;
+
+font-family:"Orbitron",sans-serif;
+font-size:13px;
+letter-spacing:.6px;
+
+color:#fff;
+
+border-radius:8px;
+
+border:1px solid rgba(255,255,255,0.08);
+
+cursor:pointer;
+
+/* F1 panel background */
+
+background:
+linear-gradient(145deg,#121212,#050505);
+
+box-shadow:
+inset 0 0 12px rgba(0,0,0,.8),
+0 0 10px rgba(225,6,0,.15);
+
+transition:.25s;
+
+position:relative;
+
+}
+
+/* HOVER */
+
+.season-dropdown:hover{
+
+border-color:#e10600;
+
+box-shadow:
+0 0 12px rgba(225,6,0,.6);
+
+transform:translateY(-1px);
+
+}
+
+/* FOCUS */
+
+.season-dropdown:focus{
+
+outline:none;
+
+border-color:#e10600;
+
+box-shadow:
+0 0 16px rgba(225,6,0,.9);
+
+}
+
+/* OPTION STYLE */
+
+.season-dropdown option{
+
+background:#0c0c0c;
+color:white;
+
+}
+
+/* =========================
+   F1 ARROW
+========================= */
+
+.season-dropdown{
+
+background-image:
+linear-gradient(45deg, transparent 50%, #e10600 50%),
+linear-gradient(135deg, #e10600 50%, transparent 50%);
+
+background-position:
+calc(100% - 18px) calc(50% - 2px),
+calc(100% - 12px) calc(50% - 2px);
+
+background-size:6px 6px;
+
+background-repeat:no-repeat;
+
+}
+
+/* =========================
+   TELEMETRY SCAN
+========================= */
+
+.season-dropdown::before{
+
+content:"";
+
+position:absolute;
+
+left:-120%;
+top:0;
+
+width:120%;
+height:100%;
+
+background:
+linear-gradient(
+120deg,
+transparent,
+rgba(255,255,255,.05),
+transparent
+);
+
+animation:dropdownScan 6s linear infinite;
+
+pointer-events:none;
+
+}
+
+@keyframes dropdownScan{
+
+0%{left:-120%}
+100%{left:120%}
+
+}
