@@ -37,7 +37,7 @@ export default function RaceControl() {
   });
 
   /* ==================================================
-     LOAD SEASON PROGRESS FROM BACKEND
+     LOAD SEASON PROGRESS
   ================================================== */
 
   const loadSeasonProgress = async () => {
@@ -54,7 +54,8 @@ export default function RaceControl() {
 
     } catch (err) {
 
-      console.error("Progress load failed");
+      console.error("Progress load failed", err);
+
       setCompletedRounds(0);
       setCurrentRound(0);
 
@@ -68,6 +69,8 @@ export default function RaceControl() {
 
   useEffect(() => {
 
+    if (!season?.id) return;
+
     setRaceWeekendId(null);
     setResults(null);
     setRecap(null);
@@ -79,13 +82,15 @@ export default function RaceControl() {
   }, [season?.id]);
 
   /* ==================================================
-     DETERMINE IF SEASON FINISHED
+     SEASON COMPLETION CHECK
   ================================================== */
 
   const isSeasonCompleted =
     season && completedRounds >= season.raceCount;
 
   useEffect(() => {
+
+    if (!season) return;
 
     if (isSeasonCompleted) {
       setSessionState("finished");
@@ -96,36 +101,48 @@ export default function RaceControl() {
   }, [completedRounds, season]);
 
   /* ==================================================
-     SIMULATION ENGINE
+     SIMULATE RACE
   ================================================== */
 
   const handleSimulate = async () => {
 
+    if (!season?.id) {
+
+      setMessage("No active season available.");
+
+      return;
+
+    }
+
     try {
 
       setMessage(null);
-
       setSessionState("red");
       setSimLoading(true);
 
       await new Promise(r => setTimeout(r, 700));
 
       setSessionState("yellow");
+
       await new Promise(r => setTimeout(r, 700));
 
       setSessionState("green");
 
-      const simResponse = await simulateRace(season.id);
+      /* ================= SIMULATE RACE ================= */
+
+      const simResponse = await simulateRace({
+        seasonId: season.id
+      });
 
       const weekendId = simResponse.raceWeekendId;
 
       setRaceWeekendId(weekendId);
 
-      /* refresh progress */
+      /* ================= UPDATE PROGRESS ================= */
 
       await loadSeasonProgress();
 
-      /* ================= RESULTS ================= */
+      /* ================= LOAD RESULTS ================= */
 
       const raceData = await fetchRaceResults(weekendId);
 
@@ -135,6 +152,8 @@ export default function RaceControl() {
 
       setSimLoading(false);
       setAiLoading(true);
+
+      /* ================= AI RECAP ================= */
 
       const aiData = await fetchAIRecap(weekendId);
 
@@ -146,21 +165,21 @@ export default function RaceControl() {
 
       /* ================= SEASON FINISHED ================= */
 
-      if (simResponse.seasonCompleted) {
+      if (simResponse?.seasonCompleted) {
 
         setMessage(
-          `🏆 Season Completed! Champion: ${simResponse.finale?.champion}`
+          `🏆 Season Completed! Champion: ${simResponse?.finale?.champion}`
         );
 
-        await reloadSeason(); // load new season
+        await reloadSeason(); // auto load Season 2
 
       }
 
     } catch (error) {
 
-      console.error(error);
+      console.error("Race simulation failed:", error);
 
-      setMessage("Season already completed.");
+      setMessage("Race simulation failed.");
 
     } finally {
 
@@ -214,7 +233,8 @@ export default function RaceControl() {
           disabled={
             simLoading ||
             aiLoading ||
-            isSeasonCompleted
+            isSeasonCompleted ||
+            !season?.id
           }
         >
 

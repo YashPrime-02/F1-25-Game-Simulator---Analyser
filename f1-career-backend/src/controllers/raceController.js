@@ -162,6 +162,7 @@ const shuffleArray = (array) => {
    SUBMIT RACE RESULTS
 ========================================================= */
 exports.submitRaceResults = async (req, res) => {
+
   const { raceWeekendId, results } = req.body;
 
   if (!raceWeekendId || !Array.isArray(results)) {
@@ -178,21 +179,18 @@ exports.submitRaceResults = async (req, res) => {
 
   const positions = results.map((r) => r.position);
 
-  // Position null check
-  if (positions.includes(null)) {
+  if (positions.includes(null) || positions.includes(undefined)) {
     return res.status(400).json({
       message: "All drivers must have a position",
     });
   }
 
-  // Range check
   if (positions.some((p) => p < 1 || p > 20)) {
     return res.status(400).json({
       message: "Positions must be between 1 and 20",
     });
   }
 
-  // Duplicate check
   const uniquePositions = new Set(positions);
   if (uniquePositions.size !== 20) {
     return res.status(400).json({
@@ -200,7 +198,6 @@ exports.submitRaceResults = async (req, res) => {
     });
   }
 
-  // Fastest lap check
   const fastestLapCount = results.filter((r) => r.fastestLap).length;
   if (fastestLapCount !== 1) {
     return res.status(400).json({
@@ -208,36 +205,60 @@ exports.submitRaceResults = async (req, res) => {
     });
   }
 
-  const raceWeekend = await RaceWeekend.findByPk(raceWeekendId);
-  if (!raceWeekend) {
-    return res.status(404).json({
-      message: "Race weekend not found",
-    });
-  }
-
   const transaction = await sequelize.transaction();
 
   try {
-    await RaceResult.destroy({
-      where: { raceWeekendId },
-      transaction,
+
+    const raceWeekend = await RaceWeekend.findByPk(raceWeekendId, {
+      transaction
     });
 
-    await RaceResult.bulkCreate(
-      results.map((r) => ({
-        raceWeekendId,
-        driverId: r.driverId,
-        position: r.position,
-        fastestLap: r.fastestLap,
-        dnf: r.dnf || false,
-      })),
-      { transaction },
-    );
+    if (!raceWeekend) {
+      await transaction.rollback();
+      return res.status(404).json({
+        message: "Race weekend not found",
+      });
+    }
 
-    await updateMoraleAfterRace(results, Driver);
+    /* ===============================
+       PREVENT RESUBMISSION
+    =============================== */
 
-    // 🔥 Season completion logic
-    const season = await Season.findByPk(raceWeekend.seasonId);
+    const existingResults = await RaceResult.findOne({
+      where: { raceWeekendId },
+      transaction
+    });
+
+    if (existingResults) {
+      await transaction.rollback();
+      return res.status(400).json({
+        message: "Results for this round already submitted",
+      });
+    }
+
+    /* ===============================
+       INSERT RESULTS
+    =============================== */
+
+    const formattedResults = results.map((r) => ({
+      raceWeekendId,
+      driverId: r.driverId,
+      position: r.position,
+      fastestLap: !!r.fastestLap,
+      dnf: !!r.dnf,
+    }));
+
+    await RaceResult.bulkCreate(formattedResults, { transaction });
+
+    await updateMoraleAfterRace(formattedResults, Driver);
+
+    /* ===============================
+       SEASON COMPLETION CHECK
+    =============================== */
+
+    const season = await Season.findByPk(raceWeekend.seasonId, {
+      transaction
+    });
 
     const completedRoundsRaw = await RaceResult.findAll({
       attributes: ["raceWeekendId"],
@@ -252,18 +273,29 @@ exports.submitRaceResults = async (req, res) => {
       transaction,
     });
 
-    if (completedRoundsRaw.length === season.raceCount) {
+    if (completedRoundsRaw.length >= season.raceCount) {
       await season.update({ status: "completed" }, { transaction });
     }
 
     await transaction.commit();
 
-    res.json({ message: "Race results saved successfully" });
+    res.json({
+      message: "Race results saved successfully",
+    });
+
   } catch (err) {
+
     await transaction.rollback();
-    console.error(err);
-    res.status(500).json({ message: "Failed to save results" });
+
+    console.error("submitRaceResults error:", err);
+
+    res.status(500).json({
+      message: "Failed to save results",
+      error: err.message
+    });
+
   }
+
 };
 
 /* =========================================================
@@ -1053,30 +1085,43 @@ exports.getChampionshipSummary = async (req, res) => {
 
 exports.getLatestRace = async (req, res) => {
   try {
+
     const { seasonId } = req.params;
+
+    if (!seasonId) {
+      return res.status(400).json({
+        message: "seasonId required"
+      });
+    }
 
     const race = await RaceWeekend.findOne({
       where: { seasonId },
       include: [
         {
           model: RaceResult,
-          required: true, // ensures only races with results
+          required: false, // allow race weekend even if results not inserted yet
         },
       ],
       order: [["roundNumber", "DESC"]],
     });
 
+    /* ===============================
+       NO RACE YET
+    =============================== */
+
     if (!race) {
-      return res.status(404).json({
-        message: "No completed races yet",
-      });
+      return res.json(null);
     }
 
     res.json(race);
+
   } catch (err) {
+
     console.error("getLatestRace error:", err);
+
     res.status(500).json({
-      message: "Failed to fetch latest completed race",
+      message: "Failed to fetch latest race"
     });
+
   }
 };

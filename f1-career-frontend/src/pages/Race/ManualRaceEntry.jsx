@@ -37,34 +37,30 @@ function SortableDriver({ driver, index, toggleFastestLap, toggleDNF }) {
         {driver.firstName} {driver.lastName}
       </div>
 
-      <div
-        className="control-col"
-        onPointerDown={(e) => e.stopPropagation()}
-      >
+      <div className="control-col" onPointerDown={(e) => e.stopPropagation()}>
         <label className="fl-box">
           <input
             type="checkbox"
             checked={driver.fastestLap}
             onChange={() => toggleFastestLap(driver.id)}
           />
-          <span>FL</span>
+          <span>Fastest Lap</span>
         </label>
 
-        <label className="dnf-box">
+        {/* <label className="dnf-box">
           <input
             type="checkbox"
             checked={driver.dnf}
             onChange={() => toggleDNF(driver.id)}
           />
           <span>DNF</span>
-        </label>
+        </label> */}
       </div>
     </div>
   );
 }
 
 /* ================= MAIN ================= */
-
 export default function ManualRaceEntry() {
   const { season } = useSeason();
 
@@ -73,117 +69,192 @@ export default function ManualRaceEntry() {
   const [loading, setLoading] = useState(false);
   const [recap, setRecap] = useState(null);
   const [recapLoading, setRecapLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [countdown, setCountdown] = useState(null);
+
+  /* ================= LOAD DRIVERS ================= */
 
   useEffect(() => {
     const loadDrivers = async () => {
       const res = await api.get("/drivers");
+
       setDrivers(
         res.data.map((d) => ({
           ...d,
           fastestLap: false,
           dnf: false,
-        }))
+        })),
       );
     };
+
     loadDrivers();
   }, []);
 
-  const createWeekend = async () => {
-    if (!season?.id) return alert("No active season.");
+  /* ================= AUTO DETECT WEEKEND ================= */
 
-    try {
-      setLoading(true);
-      const res = await api.post("/races/weekend", {
-        seasonId: season.id,
-      });
-      setRaceWeekendId(res.data.id);
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed creating weekend");
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    const detectWeekend = async () => {
+      if (!season?.id) return;
+
+      try {
+        const res = await api.post("/races/weekend", {
+          seasonId: season.id,
+        });
+
+        setRaceWeekendId(res.data.id);
+      } catch (err) {
+        console.log("Weekend detection skipped");
+      }
+    };
+
+    detectWeekend();
+  }, [season]);
+
+  useEffect(() => {
+    if (countdown === null) return;
+
+    if (countdown === 0) {
+      window.location.reload();
+      return;
     }
-  };
+
+    const timer = setTimeout(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
+  /* ================= DRAG ================= */
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
+
     if (!over) return;
+
     if (active.id !== over.id) {
       const oldIndex = drivers.findIndex((d) => d.id === active.id);
       const newIndex = drivers.findIndex((d) => d.id === over.id);
+
       setDrivers(arrayMove(drivers, oldIndex, newIndex));
     }
   };
+
+  /* ================= FASTEST LAP ================= */
 
   const toggleFastestLap = (id) => {
     setDrivers((prev) =>
       prev.map((d) => ({
         ...d,
         fastestLap: d.id === id ? !d.fastestLap : false,
-      }))
+      })),
     );
   };
+
+  /* ================= DNF ================= */
 
   const toggleDNF = (id) => {
     setDrivers((prev) =>
-      prev.map((d) =>
-        d.id === id ? { ...d, dnf: !d.dnf } : d
-      )
+      prev.map((d) => (d.id === id ? { ...d, dnf: !d.dnf } : d)),
     );
   };
 
+  /* ================= SUBMIT ================= */
+
   const submitResults = async () => {
-    try {
-      setLoading(true);
-      setRecapLoading(true);
+  try {
 
-      const fastestCount = drivers.filter((d) => d.fastestLap).length;
-      if (fastestCount !== 1) {
-        alert("Exactly one fastest lap required.");
-        setLoading(false);
-        return;
-      }
+    setLoading(true);
+    setRecapLoading(true);
 
-      const results = drivers.map((d, index) => ({
-        driverId: d.id,
-        position: index + 1,
-        fastestLap: d.fastestLap,
-        dnf: d.dnf,
-      }));
+    const fastestCount = drivers.filter((d) => d.fastestLap).length;
 
-      await api.post("/races/results", {
-        raceWeekendId,
-        results,
-      });
-
-      const recapRes = await api.get(
-        `/races/recap-ai/${raceWeekendId}`
-      );
-
-      setRecap(recapRes.data);
-    } catch (err) {
-      alert(err.response?.data?.message || "Submission failed");
-    } finally {
+    if (fastestCount !== 1) {
+      alert("Exactly one fastest lap required.");
       setLoading(false);
-      setRecapLoading(false);
+      return;
     }
-  };
+
+    const results = drivers.map((d, index) => ({
+      driverId: d.id,
+      position: index + 1,
+      fastestLap: d.fastestLap,
+      dnf: d.dnf,
+    }));
+
+    /* ===============================
+       SAVE RESULTS
+    =============================== */
+
+    await api.post("/races/results", {
+      raceWeekendId,
+      results,
+    });
+
+    setSubmitted(true);
+
+    /* ===============================
+       FETCH AI RECAP
+    =============================== */
+
+    try {
+
+      const recapRes = await api.get(`/races/recap-ai/${raceWeekendId}`);
+      setRecap(recapRes.data);
+
+    } catch {
+      console.warn("AI recap unavailable.");
+    }
+
+    /* ===============================
+       SHOW TOAST + START COUNTDOWN
+    =============================== */
+
+    setToast("Race results submitted ✔ Preparing next round...");
+    setCountdown(10);   // start reverse countdown
+
+  } catch (err) {
+
+    alert(err.response?.data?.message || "Submission failed");
+
+  } finally {
+
+    setLoading(false);
+    setRecapLoading(false);
+
+  }
+};
 
   return (
     <div className="manual-wrapper">
+      {toast && (
+        <div className="toast-message">
+          {toast}
+          {countdown !== null && (
+            <span
+              style={{ marginLeft: "8px", fontWeight: "700", color: "#e10600" }}
+            >
+              ({countdown})
+            </span>
+          )}
+        </div>
+      )}
       <GlassCard className="manual-header">
         <h2>Manual Race Control</h2>
-        {!raceWeekendId ? (
-          <button  className="submit-btn" onClick={createWeekend} disabled={loading}>
-            {loading ? "Preparing Weekend..." : "Start New Round"}
-          </button>
-        ) : (
+
+        {raceWeekendId ? (
           <div className="weekend-status">Weekend Ready ✔</div>
+        ) : (
+          <div>Preparing Weekend...</div>
         )}
       </GlassCard>
 
       {raceWeekendId && (
         <GlassCard className="manual-board">
           <h3>Drag Drivers to Set Finishing Order</h3>
+
+          <h3>NOTE : PLACE DNF DRIVERS AT LAST MANUALLY PLEASE</h3>
 
           <DndContext
             collisionDetection={closestCenter}
@@ -210,9 +281,9 @@ export default function ManualRaceEntry() {
           <button
             className="submit-btn"
             onClick={submitResults}
-            disabled={loading}
+            disabled={loading || submitted}
           >
-            Submit Race Results
+            {submitted ? "Round Submitted ✔" : "Submit Race Results"}
           </button>
         </GlassCard>
       )}

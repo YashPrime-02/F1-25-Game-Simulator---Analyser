@@ -1,13 +1,11 @@
 import { Navigate } from "react-router-dom";
 
-function PublicRoute({ children }) {
+export default function PublicRoute({ children }) {
   const token = localStorage.getItem("token");
 
-  if (token) {
+  if (token && window.location.pathname === "/") {
     return <Navigate to="/mode" replace />;
   }
 
   return children;
 }
-
-export default PublicRoute;

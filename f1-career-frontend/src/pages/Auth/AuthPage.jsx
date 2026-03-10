@@ -17,8 +17,11 @@ function AuthPage() {
   // Auto redirect if token exists
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) navigate("/mode");
-  }, [navigate]);
+
+    if (token) {
+      navigate("/mode", { replace: true });
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,8 +38,11 @@ function AuthPage() {
         ? await signupUser({ name, email, password })
         : await loginUser({ email, password });
 
-      localStorage.setItem("token", payload.token);
-      navigate("/mode");
+      if (payload?.token) {
+        localStorage.setItem("token", payload.token);
+        navigate("/mode", { replace: true });
+      }
+
     } catch (err) {
       playError();
       alert(err.response?.data?.message || "Authentication failed");

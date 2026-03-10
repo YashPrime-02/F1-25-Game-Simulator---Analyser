@@ -18,31 +18,45 @@ export function SeasonProvider({ children }) {
       setLoading(true);
 
       /* ===============================
-         LOAD ALL SEASONS (dropdown)
+         LOAD ALL SEASONS
       =============================== */
 
       const allSeasons = await fetchAllSeasons();
 
-      setSeasons(allSeasons || []);
-
-      let selectedSeason = null;
+      let seasonsList = allSeasons || [];
 
       /* ===============================
-         TRY FETCH ACTIVE SEASON
+         FETCH ACTIVE SEASON
       =============================== */
+
+      let activeSeason = null;
 
       try {
 
-        const active = await fetchActiveSeason();
-
-        if (active) {
-          selectedSeason = active;
-        }
+        activeSeason = await fetchActiveSeason();
 
       } catch (err) {
 
-        // 404 is expected when no active season exists
-        console.log("No active season from API");
+        console.warn("Active season fetch failed:", err);
+
+      }
+
+      /* ===============================
+         DETERMINE SELECTED SEASON
+      =============================== */
+
+      let selectedSeason = null;
+
+      if (activeSeason) {
+
+        selectedSeason = activeSeason;
+
+        // ensure active season exists in dropdown list
+        const exists = seasonsList.find(s => s.id === activeSeason.id);
+
+        if (!exists) {
+          seasonsList = [...seasonsList, activeSeason];
+        }
 
       }
 
@@ -50,12 +64,13 @@ export function SeasonProvider({ children }) {
          FALLBACK → LATEST SEASON
       =============================== */
 
-      if (!selectedSeason && allSeasons?.length > 0) {
+      if (!selectedSeason && seasonsList.length > 0) {
 
-        selectedSeason = allSeasons[allSeasons.length - 1];
+        selectedSeason = seasonsList[seasonsList.length - 1];
 
       }
 
+      setSeasons(seasonsList);
       setSeason(selectedSeason);
 
       /* ===============================

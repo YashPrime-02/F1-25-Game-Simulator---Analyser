@@ -23,12 +23,9 @@ exports.createPlayerCareer = async (req, res) => {
     const { driverId, careerName, teamId, replacedDriverId, customDriver } =
       req.body;
 
-    /* ===============================
-       SINGLE CAREER CHECK
-    =============================== */
-
     const existing = await PlayerCareer.findOne({
       where: { userId: req.user.id },
+      transaction
     });
 
     if (existing) {
@@ -38,11 +35,7 @@ exports.createPlayerCareer = async (req, res) => {
       });
     }
 
-    /* ===============================
-       TEAM VALIDATION
-    =============================== */
-
-    const team = await Team.findByPk(teamId);
+    const team = await Team.findByPk(teamId, { transaction });
 
     if (!team) {
       await transaction.rollback();
@@ -51,15 +44,12 @@ exports.createPlayerCareer = async (req, res) => {
       });
     }
 
-    /* ===============================
-       TEAM SEAT LIMIT (2 DRIVERS)
-    =============================== */
-
     const activeDrivers = await Driver.count({
       where: {
         teamId,
         isActive: true,
       },
+      transaction
     });
 
     if (activeDrivers >= 2 && !replacedDriverId) {
@@ -71,12 +61,8 @@ exports.createPlayerCareer = async (req, res) => {
 
     let finalDriverId = driverId;
 
-    /* ===============================
-       DRIVER REPLACEMENT VALIDATION
-    =============================== */
-
     if (replacedDriverId) {
-      const replacedDriver = await Driver.findByPk(replacedDriverId);
+      const replacedDriver = await Driver.findByPk(replacedDriverId, { transaction });
 
       if (!replacedDriver) {
         await transaction.rollback();
@@ -94,10 +80,6 @@ exports.createPlayerCareer = async (req, res) => {
 
       await replacedDriver.update({ isActive: false }, { transaction });
     }
-
-    /* ===============================
-       CUSTOM DRIVER CREATION
-    =============================== */
 
     if (customDriver) {
       const newDriver = await Driver.create(
@@ -117,10 +99,6 @@ exports.createPlayerCareer = async (req, res) => {
       finalDriverId = newDriver.id;
     }
 
-    /* ===============================
-       CREATE CAREER RECORD
-    =============================== */
-
     const career = await PlayerCareer.create(
       {
         userId: req.user.id,
@@ -133,27 +111,43 @@ exports.createPlayerCareer = async (req, res) => {
       { transaction }
     );
 
+    /*
+    =====================================
+    AUTO CREATE FIRST SEASON
+    =====================================
+    */
+
+    await Season.create(
+      {
+        careerId: career.id,
+        seasonNumber: 1,
+        year: 2025,
+        raceCount: 24,
+        status: "active",
+      },
+      { transaction }
+    );
+
     await transaction.commit();
 
     const populatedCareer = await PlayerCareer.findByPk(career.id, {
-      include: [
-        {
-          model: Driver,
-          include: [Team],
-        },
-      ],
+      include: [{ model: Driver, include: [Team] }],
     });
 
     res.json(populatedCareer);
+
   } catch (err) {
+
     await transaction.rollback();
+
     console.error(err);
+
     res.status(500).json({
       message: "Failed creating career",
     });
+
   }
 };
-
 /*
 ====================================================
 GET PLAYER CAREER

@@ -18,13 +18,17 @@ import ManualRaceEntry from "./pages/Race/ManualRaceEntry";
 import Constructors from "./pages/Constructors/Constructors";
 import TeammateDelta from "./pages/Constructors/TeammateDelta";
 import SeasonSummary from "./pages/SeasonSummary/SeasonSummary";
-import './App.css';
+import NavigationSound from "./context/NavigationSound";
+import "./App.css";
 
 function App() {
   return (
     <ThemeProvider>
       <F1Background />
       <BrowserRouter>
+        {/* Global Navigation Sound */}
+        <NavigationSound />
+
         <Routes>
           {/* Public Route (blocked if logged in) */}
           <Route

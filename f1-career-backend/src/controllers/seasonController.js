@@ -91,6 +91,8 @@ exports.createSeason = async (req, res) => {
   }
 };
 
+
+
 /* ======================================================
    GET ALL SEASONS (FOR DROPDOWN)
 ====================================================== */
@@ -99,15 +101,20 @@ exports.getAllSeasons = async (req, res) => {
 
   try {
 
-    const careers = await Career.findAll({
-      where: { userId: req.user.id }
+    /* GET LATEST USER CAREER */
+
+    const career = await Career.findOne({
+      where: { userId: req.user.id },
+      order: [["createdAt","DESC"]]
     });
 
-    const careerIds = careers.map(c => c.id);
+    if (!career) {
+      return res.json([]);
+    }
 
     const seasons = await Season.findAll({
       where: {
-        careerId: { [Op.in]: careerIds }
+        careerId: career.id
       },
       order: [["seasonNumber","ASC"]]
     });
@@ -125,73 +132,92 @@ exports.getAllSeasons = async (req, res) => {
   }
 
 };
+
+
+
 /* ======================================================
    GET ACTIVE SEASON
 ====================================================== */
 
-
 exports.getActiveSeason = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
   try {
 
-    const careers = await Career.findAll({
+    const career = await Career.findOne({
       where: { userId: req.user.id },
+      order: [["createdAt","DESC"]],
+      transaction
     });
 
-    if (!careers.length) {
-      return res.status(404).json({
-        message: "No career found",
-      });
+    if (!career) {
+      await transaction.rollback();
+      return res.json(null);
     }
 
-    const careerIds = careers.map(c => c.id);
-
-    /* ===============================
-       1️⃣ TRY FIND ACTIVE SEASON
-    =============================== */
+    /* FIND ACTIVE SEASON */
 
     let season = await Season.findOne({
       where: {
-        careerId: careerIds,
-        status: "active",
+        careerId: career.id,
+        status: "active"
       },
-      order: [["seasonNumber", "DESC"]],
+      order: [["seasonNumber","DESC"]],
+      transaction
     });
 
-    /* ===============================
-       2️⃣ IF NONE ACTIVE → CREATE NEXT
-    =============================== */
+    /* IF ACTIVE EXISTS RETURN */
 
-    if (!season) {
-
-      const lastSeason = await Season.findOne({
-        where: { careerId: careerIds },
-        order: [["seasonNumber", "DESC"]],
-      });
-
-      if (!lastSeason) {
-        return res.status(404).json({
-          message: "No seasons exist",
-        });
-      }
-
-      season = await Season.create({
-        careerId: lastSeason.careerId,
-        seasonNumber: lastSeason.seasonNumber + 1,
-        year: lastSeason.year + 1,
-        raceCount: lastSeason.raceCount,
-        status: "active",
-      });
-
+    if (season) {
+      await transaction.commit();
+      return res.json(season);
     }
 
-    res.json(season);
+    /* FIND LAST SEASON */
+
+    const lastSeason = await Season.findOne({
+      where: { careerId: career.id },
+      order: [["seasonNumber","DESC"]],
+      transaction
+    });
+
+    /* NO SEASONS EXIST → CREATE FIRST */
+
+    if (!lastSeason) {
+
+      season = await Season.create({
+        careerId: career.id,
+        seasonNumber: 1,
+        year: 2025,
+        raceCount: 24,
+        status: "active"
+      }, { transaction });
+
+      await transaction.commit();
+      return res.json(season);
+    }
+
+    /* CREATE NEXT SEASON */
+
+    season = await Season.create({
+      careerId: career.id,
+      seasonNumber: lastSeason.seasonNumber + 1,
+      year: lastSeason.year + 1,
+      raceCount: lastSeason.raceCount,
+      status: "active"
+    }, { transaction });
+
+    await transaction.commit();
+    return res.json(season);
 
   } catch (err) {
 
-    console.error(err);
+    await transaction.rollback();
+
+    console.error("getActiveSeason error:", err);
 
     res.status(500).json({
-      message: "Failed fetching active season",
+      message: "Failed fetching active season"
     });
 
   }
@@ -235,6 +261,8 @@ exports.getSeasonById = async (req, res) => {
   }
 
 };
+
+
 
 /* ======================================================
    COMPLETE SEASON + AUTO CREATE NEXT
