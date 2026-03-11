@@ -302,55 +302,85 @@ exports.submitRaceResults = async (req, res) => {
    DRIVER STANDINGS
 ========================================================= */
 exports.getDriverStandings = async (req, res) => {
-  const { seasonId } = req.params;
 
-  const raceWeekends = await RaceWeekend.findAll({ where: { seasonId } });
-  const raceIds = raceWeekends.map((r) => r.id);
+  try {
 
-  const allResults = await RaceResult.findAll({
-    where: { raceWeekendId: raceIds },
-  });
+    const { seasonId } = req.params;
 
-  const drivers = await Driver.findAll();
-  const teams = await Team.findAll();
+    const results = await RaceResult.findAll({
 
-  const driverMap = {};
-  drivers.forEach((d) => (driverMap[d.id] = d));
+      include: [
+        {
+          model: RaceWeekend,
+          where: { seasonId },
+          attributes: []
+        },
+        {
+          model: Driver,
+          attributes: ["id", "firstName", "lastName", "teamId", "driverNumber"],
+          include: [
+            {
+              model: Team,
+              attributes: ["name"]
+            }
+          ]
+        }
+      ]
 
-  const teamMap = {};
-  teams.forEach((t) => (teamMap[t.id] = t.name));
+    });
 
-  const standings = {};
-
-  allResults.forEach((r) => {
-    const driver = driverMap[r.driverId];
-    if (!driver) return;
-
-    let points = POINTS_MAP[r.position] || 0;
-    if (r.fastestLap && r.position <= 10) points += 1;
-
-    if (!standings[r.driverId]) {
-      standings[r.driverId] = {
-        driverId: r.driverId,
-        driverName: `${driver.firstName} ${driver.lastName}`,
-        teamName: teamMap[driver.teamId] || "Unknown",
-        driverNumber: driver.driverNumber,
-        totalPoints: 0,
-        wins: 0,
-        podiums: 0,
-      };
+    if (!results.length) {
+      return res.json([]);
     }
 
-    standings[r.driverId].totalPoints += points;
-    if (r.position === 1) standings[r.driverId].wins += 1;
-    if (r.position <= 3) standings[r.driverId].podiums += 1;
-  });
+    const standings = {};
 
-  const sorted = Object.values(standings).sort(
-    (a, b) => b.totalPoints - a.totalPoints,
-  );
+    results.forEach((r) => {
 
-  res.json(sorted);
+      const driver = r.Driver;
+
+      let points = POINTS_MAP[r.position] || 0;
+
+      if (r.fastestLap && r.position <= 10) points += 1;
+
+      if (!standings[driver.id]) {
+
+        standings[driver.id] = {
+          driverId: driver.id,
+          driverName: `${driver.firstName} ${driver.lastName}`,
+          teamName: driver.Team?.name || "Unknown",
+          driverNumber: driver.driverNumber,
+          totalPoints: 0,
+          wins: 0,
+          podiums: 0
+        };
+
+      }
+
+      standings[driver.id].totalPoints += points;
+
+      if (r.position === 1) standings[driver.id].wins += 1;
+
+      if (r.position <= 3) standings[driver.id].podiums += 1;
+
+    });
+
+    const sorted = Object.values(standings).sort(
+      (a, b) => b.totalPoints - a.totalPoints
+    );
+
+    res.json(sorted);
+
+  } catch (err) {
+
+    console.error("getDriverStandings error:", err);
+
+    res.status(500).json({
+      message: "Failed loading standings"
+    });
+
+  }
+
 };
 
 /* =========================================================
@@ -625,7 +655,7 @@ exports.getConstructorStandings = async (req, res) => {
   const raceIds = raceWeekends.map((r) => r.id);
 
   const results = await RaceResult.findAll({
-    where: { raceWeekendId: raceIds },
+    where: { raceWeekendId: raceIds }
   });
 
   const drivers = await Driver.findAll();
@@ -1053,29 +1083,50 @@ exports.getSeasonCommentary = async (req, res) => {
 ========================================================= */
 exports.getChampionshipSummary = async (req, res) => {
   try {
+
     const { seasonId } = req.params;
 
-    const season = await Season.findByPk(seasonId);
-    if (!season)
-      return res.status(404).json({
-        message: "Season not found",
-      });
-
-    const summary = await buildChampionshipSummary(season);
-
-    if (!summary) {
+    if (!seasonId) {
       return res.status(400).json({
-        message: "No championship data yet",
+        message: "seasonId required"
       });
     }
 
+    const season = await Season.findByPk(seasonId);
+
+    if (!season) {
+      return res.status(404).json({
+        message: "Season not found",
+      });
+    }
+
+    let summary = await buildChampionshipSummary(season);
+
+    /* =====================================
+       FIX: RETURN SAFE EMPTY SUMMARY
+    ===================================== */
+
+    if (!summary) {
+
+      summary = {
+        phase: "Season just started",
+        momentum: "No momentum yet",
+        rivalry: null,
+        racesCompleted: 0,
+      };
+
+    }
+
     res.json(summary);
+
   } catch (error) {
+
     console.error("championshipSummary error:", error);
+
     res.status(500).json({
-      message: error.message,
-      stack: error.stack,
+      message: "Failed loading championship summary",
     });
+
   }
 };
 
@@ -1095,15 +1146,25 @@ exports.getLatestRace = async (req, res) => {
     }
 
     const race = await RaceWeekend.findOne({
-      where: { seasonId },
+
+  where: { seasonId },
+
+  include: [
+    {
+      model: RaceResult,
       include: [
         {
-          model: RaceResult,
-          required: false, // allow race weekend even if results not inserted yet
-        },
+          model: Driver,
+          attributes: ["firstName", "lastName"]
+        }
       ],
-      order: [["roundNumber", "DESC"]],
-    });
+      required: false
+    }
+  ],
+
+  order: [["roundNumber", "DESC"]]
+
+});
 
     /* ===============================
        NO RACE YET

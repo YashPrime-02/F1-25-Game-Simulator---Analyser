@@ -1,14 +1,17 @@
 const {
   sequelize,
+  Career,
   PlayerCareer,
   Driver,
   Team,
   Season,
   RaceWeekend,
   RaceResult,
+  CareerDriverLineup
 } = require("../models");
 
 const { calculateDriverStandings } = require("../services/championshipService");
+
 
 /*
 ====================================================
@@ -17,11 +20,36 @@ CREATE PLAYER CAREER (SEAT ALLOTMENT ENGINE)
 */
 
 exports.createPlayerCareer = async (req, res) => {
+
   const transaction = await sequelize.transaction();
 
   try {
+
     const { driverId, careerName, teamId, replacedDriverId, customDriver } =
       req.body;
+
+    /* =====================================
+       FIND MAIN CAREER
+    ===================================== */
+
+    const mainCareer = await Career.findOne({
+      where: { userId: req.user.id },
+      transaction
+    });
+
+    if (!mainCareer) {
+
+      await transaction.rollback();
+
+      return res.status(404).json({
+        message: "Career not found"
+      });
+
+    }
+
+    /* =====================================
+       CHECK PLAYER CAREER EXISTS
+    ===================================== */
 
     const existing = await PlayerCareer.findOne({
       where: { userId: req.user.id },
@@ -29,20 +57,34 @@ exports.createPlayerCareer = async (req, res) => {
     });
 
     if (existing) {
+
       await transaction.rollback();
+
       return res.status(400).json({
         message: "Career already exists",
       });
+
     }
+
+    /* =====================================
+       VALIDATE TEAM
+    ===================================== */
 
     const team = await Team.findByPk(teamId, { transaction });
 
     if (!team) {
+
       await transaction.rollback();
+
       return res.status(404).json({
         message: "Team not found",
       });
+
     }
+
+    /* =====================================
+       CHECK ACTIVE DRIVERS
+    ===================================== */
 
     const activeDrivers = await Driver.count({
       where: {
@@ -53,53 +95,120 @@ exports.createPlayerCareer = async (req, res) => {
     });
 
     if (activeDrivers >= 2 && !replacedDriverId) {
+
       await transaction.rollback();
+
       return res.status(400).json({
         message: "Team already has 2 active drivers. Select replacement.",
       });
+
     }
 
     let finalDriverId = driverId;
 
+    /* =====================================
+       HANDLE DRIVER REPLACEMENT
+    ===================================== */
+
     if (replacedDriverId) {
+
       const replacedDriver = await Driver.findByPk(replacedDriverId, { transaction });
 
       if (!replacedDriver) {
+
         await transaction.rollback();
+
         return res.status(404).json({
           message: "Driver to replace not found",
         });
+
       }
 
       if (replacedDriver.teamId !== teamId) {
+
         await transaction.rollback();
+
         return res.status(400).json({
           message: "Driver does not belong to selected team",
         });
+
       }
 
-      await replacedDriver.update({ isActive: false }, { transaction });
-    }
-
-    if (customDriver) {
-      const newDriver = await Driver.create(
-        {
-          firstName: customDriver.firstName,
-          lastName: customDriver.lastName,
-          nationality: customDriver.nationality || "Unknown",
-          teamId,
-          driverNumber: customDriver.number || 99,
-          morale: 60,
-          isActive: true,
-          createdByUserId: req.user.id,
-        },
+      await replacedDriver.update(
+        { isActive: false },
         { transaction }
       );
 
-      finalDriverId = newDriver.id;
     }
 
-    const career = await PlayerCareer.create(
+    /* =====================================
+       CREATE CUSTOM DRIVER
+    ===================================== */
+
+/* =====================================
+   CREATE CUSTOM DRIVER
+===================================== */
+
+if (customDriver) {
+
+  // Ensure authenticated user exists
+  if (!req.user || !req.user.id) {
+    await transaction.rollback();
+    return res.status(401).json({
+      message: "Unauthorized: missing user context"
+    });
+  }
+
+  // Basic validation
+  if (!customDriver.firstName || !customDriver.lastName) {
+    await transaction.rollback();
+    return res.status(400).json({
+      message: "Custom driver must include firstName and lastName"
+    });
+  }
+
+  // Normalize values
+  const firstName = customDriver.firstName.trim();
+  const lastName = customDriver.lastName.trim();
+  const nationality = (customDriver.nationality || "Unknown").trim();
+
+  // Prevent duplicate custom drivers for same user
+  const existingCustom = await Driver.findOne({
+    where: {
+      firstName,
+      lastName,
+      createdByUserId: req.user.id
+    },
+    transaction
+  });
+
+  if (existingCustom) {
+    finalDriverId = existingCustom.id;
+  } else {
+
+    const newDriver = await Driver.create(
+      {
+        firstName,
+        lastName,
+        nationality,
+        teamId,
+        driverNumber: customDriver.number || 2,
+        morale: 60,
+        isActive: true,
+        createdByUserId: req.user.id   // required by DB rule
+      },
+      { transaction }
+    );
+
+    finalDriverId = newDriver.id;
+  }
+
+}
+    /* =====================================
+       CREATE PLAYER CAREER
+    ===================================== */
+
+    const playerCareer = await PlayerCareer.create(
       {
         userId: req.user.id,
         driverId: finalDriverId,
@@ -117,21 +226,38 @@ exports.createPlayerCareer = async (req, res) => {
     =====================================
     */
 
-    await Season.create(
-      {
-        careerId: career.id,
-        seasonNumber: 1,
-        year: 2025,
-        raceCount: 24,
-        status: "active",
+    const existingSeason = await Season.findOne({
+      where: {
+        careerId: mainCareer.id,
+        seasonNumber: 1
       },
-      { transaction }
-    );
+      transaction
+    });
+
+    if (!existingSeason) {
+
+      await Season.create(
+        {
+          careerId: mainCareer.id,
+          seasonNumber: 1,
+          year: 2025,
+          raceCount: 24,
+          status: "active",
+        },
+        { transaction }
+      );
+
+    }
 
     await transaction.commit();
 
-    const populatedCareer = await PlayerCareer.findByPk(career.id, {
-      include: [{ model: Driver, include: [Team] }],
+    const populatedCareer = await PlayerCareer.findByPk(playerCareer.id, {
+      include: [
+        {
+          model: Driver,
+          include: [Team]
+        }
+      ]
     });
 
     res.json(populatedCareer);
@@ -147,7 +273,10 @@ exports.createPlayerCareer = async (req, res) => {
     });
 
   }
+
 };
+
+
 /*
 ====================================================
 GET PLAYER CAREER
@@ -155,7 +284,9 @@ GET PLAYER CAREER
 */
 
 exports.getPlayerCareer = async (req, res) => {
+
   try {
+
     const career = await PlayerCareer.findOne({
       where: { userId: req.user.id },
       include: [
@@ -171,24 +302,35 @@ exports.getPlayerCareer = async (req, res) => {
     });
 
     res.json(career);
+
   } catch (err) {
+
     console.error(err);
+
     res.status(500).json({
       message: "Failed fetching career",
     });
+
   }
+
 };
 
-/* =========================================================
-   PLAYER PROFILE
-========================================================= */
+
+/*
+====================================================
+PLAYER PROFILE
+====================================================
+*/
 
 exports.getPlayerProfile = async (req, res) => {
+
   try {
+
     const seasonId = Number(req.params.seasonId);
     const careerMode = req.query.career === "true";
 
     const season = await Season.findByPk(seasonId);
+
     if (!season) {
       return res.status(404).json({ message: "Season not found" });
     }
@@ -204,24 +346,18 @@ exports.getPlayerProfile = async (req, res) => {
 
     const playerDriverId = playerCareer.driverId;
 
-    /* ======================================
-       DETERMINE SEASONS TO INCLUDE
-    ====================================== */
-
     let seasonIds = [seasonId];
 
     if (careerMode) {
+
       const seasons = await Season.findAll({
         where: { careerId: season.careerId },
         attributes: ["id"],
       });
 
       seasonIds = seasons.map(s => s.id);
-    }
 
-    /* ======================================
-       DRIVER STANDINGS (CURRENT SEASON ONLY)
-    ====================================== */
+    }
 
     const standings = await calculateDriverStandings(seasonId);
 
@@ -235,10 +371,6 @@ exports.getPlayerProfile = async (req, res) => {
 
     const position = index !== -1 ? index + 1 : null;
     const points = playerStanding?.totalPoints || 0;
-
-    /* ======================================
-       FETCH RESULTS (MULTI SEASON SAFE)
-    ====================================== */
 
     const results = await RaceResult.findAll({
       where: { driverId: playerDriverId },
@@ -256,10 +388,6 @@ exports.getPlayerProfile = async (req, res) => {
       ],
     });
 
-    /* ======================================
-       RESULT STATS (CAREER)
-    ====================================== */
-
     const wins = results.filter(r => r.position === 1).length;
     const podiums = results.filter(r => r.position <= 3).length;
     const dnfs = results.filter(r => r.dnf).length;
@@ -273,18 +401,10 @@ exports.getPlayerProfile = async (req, res) => {
           ).toFixed(2)
         : null;
 
-    /* ======================================
-       GRAPH DATA (SEASON + ROUND)
-    ====================================== */
-
     const raceHistory = results.map(r => ({
       round: `S${r.RaceWeekend.seasonId}-R${r.RaceWeekend.roundNumber}`,
       position: r.position,
     }));
-
-    /* ======================================
-       RESPONSE
-    ====================================== */
 
     res.json({
       driver: {
@@ -307,9 +427,13 @@ exports.getPlayerProfile = async (req, res) => {
     });
 
   } catch (err) {
+
     console.error("playerProfile error:", err);
+
     res.status(500).json({
       message: "Failed to load player profile",
     });
+
   }
+
 };

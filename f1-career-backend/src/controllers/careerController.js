@@ -231,7 +231,7 @@ exports.getCareerRivalry = async (req, res) => {
     const raceIds = raceWeekends.map((r) => r.id);
 
     const allResults = await RaceResult.findAll({
-      where: { raceWeekendId: raceIds },
+      where: { raceWeekendId: raceIds }
     });
 
     let playerWins = 0;

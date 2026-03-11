@@ -23,7 +23,7 @@ exports.calculateDriverStandings = async (seasonId) => {
   const raceIds = raceWeekends.map((r) => r.id);
 
   const results = await RaceResult.findAll({
-    where: { raceWeekendId: raceIds },
+    where: { raceWeekendId: raceIds }
   });
 
   const standings = {};
