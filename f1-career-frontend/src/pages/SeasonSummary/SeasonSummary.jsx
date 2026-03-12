@@ -40,7 +40,7 @@ export default function SeasonSummary() {
     if (!season) return;
 
     api
-      .get(`/season/progress/${season.id}`)
+      .get(`/seasons/progress/${season.id}`)
       .then((res) => setProgress(res.data));
   }, [season]);
 

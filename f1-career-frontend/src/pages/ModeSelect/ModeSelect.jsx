@@ -53,7 +53,7 @@ function ModeSelect() {
           <h2>Driver Career</h2>
           <p>Become World Champion</p>
         </motion.div>
-
+{/* 
         <motion.div
           whileHover={{ scale: 1.05 }}
           className="mode-card"
@@ -61,7 +61,7 @@ function ModeSelect() {
         >
           <h2>Team Career</h2>
           <p>Build a Legacy</p>
-        </motion.div>
+        </motion.div> */}
       </div>
     </div>
   );

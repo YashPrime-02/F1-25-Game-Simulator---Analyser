@@ -46,7 +46,7 @@ export default function RaceControl() {
 
     try {
 
-      const res = await api.get(`/season/progress/${season.id}`);
+      const res = await api.get(`/seasons/progress/${season.id}`);
       const data = res.data;
 
       setCompletedRounds(data.completed);
