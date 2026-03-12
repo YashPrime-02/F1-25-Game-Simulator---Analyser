@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { getTeams } from "../../services/teamService";
 import { getDriversByTeam } from "../../services/driverService";
 import { createPlayerCareer } from "../../services/playerCareerService";
-
+import useBackgroundAudio from "../../hooks/useBackgroundAudio";
+import f1Music from "../../assets/f1Drive.mp3";
 import GlassCard from "../../components/ui/GlassCard";
 import "./PlayerCareerSetup.css";
 
@@ -30,6 +31,14 @@ export default function PlayerCareerSetup() {
   });
 
   const [loading, setLoading] = useState(false);
+  /* ===============================
+     🎵 BACKGROUND AUDIO
+  =============================== */
+
+  useBackgroundAudio(f1Music, {
+    volume: 0.35,
+    loop: true,
+  });
 
   /* ===============================
      LOAD TEAMS

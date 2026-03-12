@@ -11,7 +11,10 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import "./manualRace.css";
+import useBackgroundAudio from "../../hooks/useBackgroundAudio";
 
+
+import f1Music from "../../assets/f1Drive.mp3";
 /* ================= SORTABLE DRIVER ================= */
 
 function SortableDriver({ driver, index, toggleFastestLap, toggleDNF }) {
@@ -74,7 +77,17 @@ export default function ManualRaceEntry() {
   const [countdown, setCountdown] = useState(null);
 
   /* ================= LOAD DRIVERS ================= */
+  
 
+    /* ===============================
+       🎵 BACKGROUND AUDIO
+    =============================== */
+  
+    useBackgroundAudio(f1Music, {
+      volume: 0.35,
+      loop: true,
+    });
+   
   useEffect(() => {
     const loadDrivers = async () => {
       const res = await api.get("/drivers");

@@ -51,7 +51,7 @@ const NewsFeed = require("./newsFeed")(sequelize, DataTypes);
 const PlayerCareer = require("./playerCareer")(sequelize, DataTypes);
 const DriverLegacy = require("./DriverLegacy")(sequelize, DataTypes);
 const TeamLegacy = require("./TeamLegacy")(sequelize, DataTypes);
-
+const Commentary = require("./commentary")(sequelize, DataTypes);
 /* =========================================================
    MODEL REGISTRY
 ========================================================= */
@@ -59,7 +59,7 @@ const TeamLegacy = require("./TeamLegacy")(sequelize, DataTypes);
 const db = {
   sequelize,
   Sequelize,
-
+  Commentary,
   User,
   Career,
   Season,
@@ -111,6 +111,9 @@ SeasonMemory.belongsTo(Season, { foreignKey: "seasonId" });
 Season.hasMany(NewsFeed, { foreignKey: "seasonId" });
 NewsFeed.belongsTo(Season, { foreignKey: "seasonId" });
 
+
+Season.hasMany(Commentary, { foreignKey: "seasonId" });
+Commentary.belongsTo(Season, { foreignKey: "seasonId" });
 /* =========================================================
    PLAYER CAREER RELATIONS
 ========================================================= */
