@@ -3,7 +3,7 @@ import api from "../../services/api";
 import { useSeason } from "../../context/SeasonContext";
 import "./Combined.css";
 import useBackgroundAudio from "../../hooks/useBackgroundAudio";
-import f1Music from "../../assets/f1Drive.mp3";
+import f1Music from "../../assets/F1_theme.mp3";
 
 /* ===============================
    Animated Number Counter

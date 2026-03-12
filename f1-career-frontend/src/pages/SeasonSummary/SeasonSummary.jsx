@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import api from "../../services/api";
 import { useSeason } from "../../context/SeasonContext";
 import "./SeasonSummary.css";
+import useBackgroundAudio from "../../hooks/useBackgroundAudio";
+import f1Music from "../../assets/F1_theme.mp3";
 
 export default function SeasonSummary() {
   const { season } = useSeason();
@@ -35,7 +37,16 @@ export default function SeasonSummary() {
     "Abu Dhabi",
   ];
   const totalRaces = F1_CALENDAR.length;
-
+    /* ===============================
+       🎵 BACKGROUND AUDIO
+    =============================== */
+  
+    useBackgroundAudio(f1Music, {
+      volume: 0.35,
+      loop: true,
+    });
+  
+    
   useEffect(() => {
     if (!season) return;
 

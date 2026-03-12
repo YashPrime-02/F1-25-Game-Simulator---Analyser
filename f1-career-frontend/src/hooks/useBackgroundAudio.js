@@ -8,9 +8,11 @@ export default function useBackgroundAudio(src, options = {}) {
   useEffect(() => {
     const STORAGE_KEY = "music-muted";
 
-    /* ===== DEFAULT STATE (music ON first visit) ===== */
-    if (localStorage.getItem(STORAGE_KEY) === null) {
-      localStorage.setItem(STORAGE_KEY, "false");
+    let stored = localStorage.getItem(STORAGE_KEY);
+
+    if (stored === null) {
+      localStorage.setItem(STORAGE_KEY, "false"); // default ON
+      stored = "false";
     }
 
     const audio = new Audio(src);
@@ -20,8 +22,7 @@ export default function useBackgroundAudio(src, options = {}) {
     audioRef.current = audio;
 
     /* ===== AUDIO CONTEXT ===== */
-    const ctx = new (window.AudioContext ||
-      window.webkitAudioContext)();
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
 
     const source = ctx.createMediaElementSource(audio);
     const analyser = ctx.createAnalyser();
@@ -35,8 +36,7 @@ export default function useBackgroundAudio(src, options = {}) {
 
     /* ===== PLAY (SAFE AUTOSTART) ===== */
     const start = async () => {
-      const muted =
-        localStorage.getItem(STORAGE_KEY) === "true";
+      const muted = localStorage.getItem(STORAGE_KEY) === "true";
 
       if (!muted) {
         try {
@@ -58,14 +58,12 @@ export default function useBackgroundAudio(src, options = {}) {
     const updateBeat = () => {
       analyser.getByteFrequencyData(dataArray);
 
-      const avg =
-        dataArray.reduce((a, b) => a + b, 0) /
-        dataArray.length;
+      const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
 
       window.dispatchEvent(
         new CustomEvent("music-beat", {
           detail: avg,
-        })
+        }),
       );
 
       rafRef.current = requestAnimationFrame(updateBeat);
@@ -75,8 +73,7 @@ export default function useBackgroundAudio(src, options = {}) {
 
     /* ===== GLOBAL MUTE HANDLER ===== */
     const toggleHandler = async () => {
-      const muted =
-        localStorage.getItem(STORAGE_KEY) === "true";
+      const muted = localStorage.getItem(STORAGE_KEY) === "true";
 
       try {
         if (ctx.state === "suspended") {

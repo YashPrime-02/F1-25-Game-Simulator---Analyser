@@ -1,5 +1,10 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
+import { useState } from "react";
+
+import F1StartLights from "./components/F1StartLights";
+import IntroVideo from "./components/IntroVideo";
+
 import AuthPage from "./pages/Auth/AuthPage";
 import ModeSelect from "./pages/ModeSelect/ModeSelect";
 import RaceControl from "./pages/RaceControl/RaceControl";
@@ -19,18 +24,40 @@ import Constructors from "./pages/Constructors/Constructors";
 import TeammateDelta from "./pages/Constructors/TeammateDelta";
 import SeasonSummary from "./pages/SeasonSummary/SeasonSummary";
 import NavigationSound from "./context/NavigationSound";
+
 import "./App.css";
 
 function App() {
+  const [phase, setPhase] = useState("lights");
+
+  // Phase 1 → F1 Start Lights
+  if (phase === "lights") {
+    return (
+      <ThemeProvider>
+        <F1StartLights onComplete={() => setPhase("video")} />
+      </ThemeProvider>
+    );
+  }
+
+  // Phase 2 → Intro Video
+  if (phase === "video") {
+    return (
+      <ThemeProvider>
+        <IntroVideo onFinish={() => setPhase("app")} />
+      </ThemeProvider>
+    );
+  }
+
+  // Phase 3 → Main Application
   return (
     <ThemeProvider>
       <F1Background />
+
       <BrowserRouter>
-        {/* Global Navigation Sound */}
         <NavigationSound />
 
         <Routes>
-          {/* Public Route (blocked if logged in) */}
+          {/* Public Route */}
           <Route
             path="/"
             element={
@@ -40,7 +67,7 @@ function App() {
             }
           />
 
-          {/* Mode must also be protected */}
+          {/* Mode Selection */}
           <Route
             path="/mode"
             element={
@@ -50,7 +77,7 @@ function App() {
             }
           />
 
-          {/* Protected Layout Routes */}
+          {/* Protected Layout */}
           <Route
             element={
               <PrivateRoute>
@@ -61,21 +88,41 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/standings" element={<Standings />} />
             <Route path="/drivers" element={<Drivers />} />
-            <Route path="/Commentary" element={<Commentary />} />
-            <Route path="/dashboard/race-control" element={<RaceControl />} />
+            <Route path="/commentary" element={<Commentary />} />
+
+            <Route
+              path="/dashboard/race-control"
+              element={<RaceControl />}
+            />
+
             <Route
               path="/dashboard/championship"
               element={<ChampionshipPage />}
             />
+
             <Route path="/recap/:raceWeekendId" element={<RaceRecap />} />
+
             <Route
               path="/player-career/setup"
               element={<PlayerCareerSetup />}
             />
+
             <Route path="/race/manual" element={<ManualRaceEntry />} />
-            <Route path="/standings/constructors" element={<Constructors />} />
-            <Route path="/standings/teammates" element={<TeammateDelta />} />
-            <Route path="/season-summary" element={<SeasonSummary />} />
+
+            <Route
+              path="/standings/constructors"
+              element={<Constructors />}
+            />
+
+            <Route
+              path="/standings/teammates"
+              element={<TeammateDelta />}
+            />
+
+            <Route
+              path="/season-summary"
+              element={<SeasonSummary />}
+            />
           </Route>
         </Routes>
       </BrowserRouter>

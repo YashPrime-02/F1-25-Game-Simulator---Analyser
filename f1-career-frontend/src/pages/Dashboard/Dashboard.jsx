@@ -12,7 +12,8 @@ import GlassCard from "../../components/ui/GlassCard";
 import Counter from "../../components/ui/Counter";
 import useBackgroundAudio from "../../hooks/useBackgroundAudio";
 
-import f1Music from "../../assets/F1_theme.mp3";
+
+import f1Music from "../../assets/f1Drive.mp3";
 import { useNavigate } from "react-router-dom";
 
 import "./dashboard.css";
