@@ -1,0 +1,27 @@
+.standings-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.standings-table th {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 2px solid var(--accent-red);
+  color: var(--text-secondary);
+}
+
+.standings-table td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.standings-table tbody tr:hover {
+  background: rgba(225, 6, 0, 0.05);
+}
+
+.leader-row {
+  background: rgba(225, 6, 0, 0.08);
+  font-weight: 700;
+  color: var(--accent-red);
+}

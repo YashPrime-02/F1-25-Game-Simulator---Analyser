@@ -1,0 +1,202 @@
+/* =====================================
+   F1 LIVE COMMENTARY — BROADCAST STYLE
+===================================== */
+
+.commentary-container {
+  max-width: 920px;
+  margin: auto;
+  position: relative;
+  padding-top: 20px;
+}
+
+/* =====================================
+   HEADER — LIVE BROADCAST BAR
+===================================== */
+
+.glass-news-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  position: relative;
+}
+
+/* animated telemetry underline */
+.glass-news-header::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  height: 2px;
+  width: 100%;
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #ff1e1e,
+    transparent
+  );
+
+  animation: telemetryFlow 3s linear infinite;
+}
+
+@keyframes telemetryFlow {
+  0% { transform: translateX(-40%); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateX(40%); opacity: 0; }
+}
+
+/* =====================================
+   LIVE DOT — F1 ON AIR STYLE
+===================================== */
+
+.live-dot {
+  width: 10px;
+  height: 10px;
+  background: #ff1e1e;
+  border-radius: 50%;
+  box-shadow:
+    0 0 6px #ff1e1e,
+    0 0 14px rgba(255,30,30,0.7);
+
+  animation: livePulse 1.6s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%,100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0.6;
+  }
+}
+
+/* =====================================
+   COMMENTARY CARD TIMELINE EFFECT
+===================================== */
+
+.commentary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  padding-left: 18px;
+}
+
+/* vertical timeline line */
+.commentary-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+
+  background: linear-gradient(
+    180deg,
+    rgba(255,30,30,0.9),
+    rgba(255,30,30,0.1)
+  );
+}
+
+/* =====================================
+   ROUND BADGE — DATA CHIP
+===================================== */
+
+.round-badge {
+  background: rgba(255, 30, 30, 0.12);
+  border: 1px solid rgba(255, 30, 30, 0.6);
+  padding: 5px 12px;
+  border-radius: 30px;
+  font-size: 0.82rem;
+  width: fit-content;
+  letter-spacing: 1px;
+
+  backdrop-filter: blur(6px);
+
+  animation: badgeGlow 3s ease-in-out infinite;
+}
+
+@keyframes badgeGlow {
+  0%,100% {
+    box-shadow: 0 0 0px rgba(255,30,30,0.2);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(255,30,30,0.5);
+  }
+}
+
+/* =====================================
+   COMMENTARY TEXT — BROADCAST FEEL
+===================================== */
+
+.commentary-text {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: #ffffffcc;
+
+  animation: commentaryReveal 0.6s ease forwards;
+}
+
+/* smooth appearance */
+@keyframes commentaryReveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* =====================================
+   GLASSCARD HOVER (F1 PANEL ENERGY)
+===================================== */
+
+.glass-card {
+  transition: transform 0.25s ease,
+              box-shadow 0.25s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 10px 30px rgba(255,30,30,0.15);
+}
+
+/* =====================================
+   SCANNING LIGHT PASS (SUBTLE)
+===================================== */
+
+.glass-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,0.08),
+    transparent
+  );
+
+  opacity: 0;
+}
+
+.glass-card:hover::after {
+  animation: scanPass 1.2s ease;
+}
+
+@keyframes scanPass {
+  0% { transform: translateX(-120%); opacity: 0; }
+  40% { opacity: .5; }
+  100% { transform: translateX(120%); opacity: 0; }
+}

@@ -1,0 +1,253 @@
+/* ======================
+   SEASON SUMMARY PANEL
+====================== */
+
+.season-summary {
+  padding: 40px;
+
+  background: radial-gradient(circle at top, #111, #050505);
+
+  border-radius: 14px;
+
+  color: white;
+
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+}
+
+/* TITLE */
+
+.season-summary h2 {
+  margin-bottom: 25px;
+
+  letter-spacing: 0.6px;
+}
+
+/* ======================
+   PROGRESS BAR
+====================== */
+
+.progress-wrapper {
+  position: relative;
+
+  margin-bottom: 10px;
+}
+
+.progress-bar {
+  height: 14px;
+
+  border-radius: 10px;
+
+  background: rgba(255, 255, 255, 0.08);
+
+  overflow: hidden;
+}
+
+/* PROGRESS FILL */
+
+.progress-fill {
+  height: 100%;
+
+  background: linear-gradient(90deg, #e10600, #ff3c3c);
+
+  box-shadow: 0 0 12px rgba(225, 6, 0, 0.9);
+
+  transition: width 0.4s ease;
+}
+
+/* TELEMETRY MARKER */
+
+.progress-marker {
+  position: absolute;
+
+  top: -6px;
+
+  width: 4px;
+  height: 26px;
+
+  background: #fff;
+
+  box-shadow: 0 0 12px white;
+
+  transition: left 0.4s ease;
+}
+
+/* TEXT */
+
+.progress-text {
+  margin-top: 8px;
+
+  font-family: "Orbitron", sans-serif;
+
+  color: #aaa;
+}
+
+/* ======================
+   RACE DOT TRACK
+====================== */
+
+.race-track {
+  margin-top: 20px;
+
+  display: grid;
+
+  grid-template-columns: repeat(12, 1fr);
+
+  gap: 10px;
+}
+/* container */
+
+.race-track {
+  margin-top: 20px;
+
+  display: grid;
+
+  grid-template-columns: repeat(12, 1fr);
+
+  gap: 12px;
+}
+
+/* node container */
+
+.race-node {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+}
+
+/* race dot */
+
+.race-dot {
+  width: 14px;
+  height: 14px;
+
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.12);
+
+  transition: 0.3s;
+}
+
+/* finished races */
+
+.race-dot.finished {
+  background: #9aff02;
+
+  box-shadow: 0 0 10px rgb(48, 102, 4);
+}
+
+/* hover */
+
+.race-dot:hover {
+  transform: scale(1.4);
+}
+
+/* venue label */
+
+.race-label {
+  margin-top: 6px;
+
+  font-size: 11px;
+
+  font-family: "Orbitron", sans-serif;
+
+  color: #66ff66;
+
+  text-align: center;
+
+  max-width: 60px;
+
+  line-height: 1.1;
+}
+/* ======================
+   LOCKED SECTION
+====================== */
+
+.locked-section {
+  margin-top: 40px;
+
+  text-align: center;
+
+  padding: 25px;
+
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.04);
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  transition: 0.3s;
+}
+
+.locked-section:hover {
+  transform: translateY(-4px);
+
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+}
+
+/* LOCK ICON */
+
+.lock-icon {
+  font-size: 40px;
+
+  color: #e10600;
+
+  animation: pulse 1.6s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.15);
+    text-shadow: 0 0 15px #e10600;
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ======================
+   WINNERS
+====================== */
+
+.champions {
+  margin-top: 40px;
+
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 20px;
+}
+
+.winner-card {
+  padding: 20px;
+
+  border-radius: 12px;
+
+  background: linear-gradient(180deg, #1a1a1a, #0a0a0a);
+
+  text-align: center;
+
+  font-weight: 600;
+
+  font-size: 18px;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  transition: 0.3s;
+}
+
+.winner-card:hover {
+  transform: translateY(-6px);
+
+  box-shadow:
+    0 15px 30px rgba(0, 0, 0, 0.7),
+    0 0 12px rgba(225, 6, 0, 0.4);
+}
+

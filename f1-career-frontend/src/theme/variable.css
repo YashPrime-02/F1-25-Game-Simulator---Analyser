@@ -1,0 +1,25 @@
+:root {
+  --bg-primary: #0b0f14;
+  --bg-secondary: rgba(20, 25, 35, 0.55);
+  --bg-glass: rgba(20, 25, 35, 0.45);
+  --font-main: 'Orbitron', sans-serif;
+  --accent-red: #e10600;
+  --accent-blue: #00bfff;
+  --accent-orange: #ff6a00;
+
+  --text-primary: #ffffff;
+  --text-secondary: #a8b3c7;
+
+  --glow-red: 0 0 12px rgba(225, 6, 0, 0.6);
+  --glow-blue: 0 0 12px rgba(0, 191, 255, 0.6);
+
+  --border-glass: 1px solid rgba(255, 255, 255, 0.08);
+
+  --transition-fast: 0.2s ease;
+  --transition-smooth: 0.4s ease;
+}
+
+body {
+  font-family: var(--font-main);
+  margin: 0;
+}

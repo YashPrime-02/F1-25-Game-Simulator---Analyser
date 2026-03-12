@@ -1,0 +1,60 @@
+
+
+/* ================= GLOBAL SCROLLBAR ================= */
+
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0b0b; /* dark track */
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    #e10600,
+    #a00000
+  );
+  border-radius: 10px;
+  border: 2px solid #0b0b0b;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff1a12;
+}
+
+/* ================= FIREFOX ================= */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #e10600 #0b0b0b;
+}
+
+/* ===== BROADCAST FADE ===== */
+
+.broadcast-enter {
+  opacity: 0;
+  transform: translateY(25px);
+  animation: broadcastFade 0.8s ease forwards;
+}
+
+@keyframes broadcastFade {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== TYPEWRITER ===== */
+
+.typewriter {
+  line-height: 1.7;
+  letter-spacing: 0.4px;
+}
+
+/* cinematic spacing */
+.recap-spacing {
+  margin-bottom: 22px;
+}

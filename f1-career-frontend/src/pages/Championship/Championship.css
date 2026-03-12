@@ -1,0 +1,165 @@
+/* ===============================
+   F1 CHAMPIONSHIP ANALYTICS UI
+================================ */
+
+
+.championship-container {
+  max-width: 1600px;   
+  padding: 60px 60px 80px; 
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 40px; 
+  animation: fadeInPage 0.8s ease;
+}
+
+
+/* ---------- Animated Background ---------- */
+
+.championship-container::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255,0,60,0.15), transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(0,180,255,0.15), transparent 40%),
+    #05070d;
+  z-index: -1;
+  animation: backgroundShift 12s ease-in-out infinite alternate;
+}
+
+@keyframes backgroundShift {
+  from {
+    filter: hue-rotate(0deg);
+  }
+  to {
+    filter: hue-rotate(30deg);
+  }
+}
+
+/* ---------- Header ---------- */
+
+.championship-header {
+  position: relative;
+  margin-bottom: 30px;
+}
+
+.championship-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  background: linear-gradient(90deg,#fff,#9ad7ff);
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: slideDown 0.7s ease;
+}
+
+/* Neon underline glow */
+.title-glow {
+  height: 3px;
+  width: 220px;
+  margin-top: 10px;
+  background: linear-gradient(90deg,#ff003c,#00c3ff);
+  border-radius: 10px;
+  box-shadow:
+    0 0 10px #ff003c,
+    0 0 25px #00c3ff;
+  animation: glowPulse 2s infinite ease-in-out;
+}
+
+@keyframes glowPulse {
+  0%,100% { opacity: .6; transform: scaleX(1); }
+  50% { opacity: 1; transform: scaleX(1.05); }
+}
+
+/* ---------- Chart Glass Card ---------- */
+
+.chart-wrapper {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(18px);
+  border-radius: 20px;
+  padding: 40px;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow:
+    0 10px 40px rgba(0,0,0,0.5),
+    inset 0 0 30px rgba(255,255,255,0.03);
+
+  animation: chartReveal 0.9s ease;
+  transition: all .4s ease;
+  z-index:5;
+  position: relative;
+}
+
+.chart-wrapper:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.7),
+    0 0 30px rgba(0,195,255,0.15);
+}
+
+/* ---------- Chart Line Animation ---------- */
+
+.recharts-line-curve {
+  stroke-dasharray: 1500;
+  stroke-dashoffset: 1500;
+  animation: drawLine 2s ease forwards;
+}
+
+@keyframes drawLine {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Tooltip styling */
+.recharts-tooltip-wrapper {
+  backdrop-filter: blur(50px);
+  z-index: 9999 !important;
+  pointer-events: none;
+}
+
+/* ---------- Empty State ---------- */
+
+.empty-state {
+  text-align: center;
+  opacity: 0.7;
+  margin-top: 80px;
+  font-size: 1.1rem;
+  animation: fadeInPage 1s ease;
+}
+
+/* ---------- Animations ---------- */
+
+@keyframes fadeInPage {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 768px) {
+  .championship-title {
+    font-size: 1.6rem;
+  }
+
+  .chart-wrapper {
+    padding: 15px;
+  }
+}
