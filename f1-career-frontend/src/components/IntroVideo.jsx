@@ -56,15 +56,18 @@ export default function IntroVideo({ onFinish }) {
         className="intro-video"
         onEnded={skipIntro}
       >
-        <source src="/Intro.mp4" type="video/mp4" />
+        <source src="/F1Intro.mp4" type="video/mp4" />
       </video>
 
       <div className="skip-message">
         Press <b>ENTER</b> to skip
-       
       </div>
       <div className="skip-message-2">
-       {isMuted && <div className="unmute-text">Click anywhere to unmute</div>}
+        <div className="unmute-text">
+          {isMuted
+            ? "Click anywhere to unmute"
+            : "ALL RIGHTS TO RESPECTIVE OWNERS"}
+        </div>
       </div>
     </div>
   );
