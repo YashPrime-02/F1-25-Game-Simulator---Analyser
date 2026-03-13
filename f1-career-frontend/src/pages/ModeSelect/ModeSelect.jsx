@@ -15,7 +15,8 @@ function ModeSelect() {
 
     // ✅ route based on mode
     if (type === "solo") {
-      navigate("/player-career/setup");
+      // navigate("/player-career/setup");
+      navigate("/dashboard");
     } else {
       navigate("/team-career/setup");
     }
@@ -25,7 +26,7 @@ function ModeSelect() {
 
       // If career already exists → still go to setup
       if (type === "solo") {
-        navigate("/player-career/setup");
+        navigate("/dashboard");
       } else {
         navigate("/team-career/setup");
       }

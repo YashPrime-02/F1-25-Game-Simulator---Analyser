@@ -3,7 +3,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { useState } from "react";
 
 import F1StartLights from "./components/F1StartLights";
-import IntroVideo from "./components/IntroVideo";
+import IntroVideo from "./context/IntroVideo";
 import DisclaimerPage from "./DisclaimerPage";
 
 import AuthPage from "./pages/Auth/AuthPage";
