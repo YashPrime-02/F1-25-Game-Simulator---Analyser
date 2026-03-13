@@ -12,9 +12,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import "./manualRace.css";
 import useBackgroundAudio from "../../hooks/useBackgroundAudio";
-
-
 import f1Music from "../../assets/f1Drive.mp3";
+
 /* ================= SORTABLE DRIVER ================= */
 
 function SortableDriver({ driver, index, toggleFastestLap, toggleDNF }) {
