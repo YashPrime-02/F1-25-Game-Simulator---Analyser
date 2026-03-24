@@ -6,6 +6,7 @@
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   transition: var(--transition-smooth);
+  margin-bottom: 1.5%;
 }
 
 .glass-card:hover {

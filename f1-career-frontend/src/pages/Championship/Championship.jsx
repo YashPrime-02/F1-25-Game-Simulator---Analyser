@@ -33,9 +33,7 @@ export default function ChampionshipPage() {
         setData(progression);
 
         if (progression.length > 0) {
-          const keys = Object.keys(progression[0]).filter(
-            (k) => k !== "round"
-          );
+          const keys = Object.keys(progression[0]).filter((k) => k !== "round");
           setDrivers(keys);
         }
       } catch (err) {
@@ -59,8 +57,7 @@ export default function ChampionshipPage() {
           .sort((a, b) => b.pts - a.pts)
       : [];
 
-  const gap =
-    sorted.length >= 2 ? sorted[0].pts - sorted[1].pts : 0;
+  const gap = sorted.length >= 2 ? sorted[0].pts - sorted[1].pts : 0;
 
   let gapColor = "#00e676";
   if (gap <= 10) gapColor = "#ff1744";
@@ -91,6 +88,63 @@ export default function ChampionshipPage() {
     return () => clearInterval(interval);
   }, [gap]);
 
+  /* ================= TITLE PROBABILITY (ENHANCED) ================= */
+
+  const TOTAL_ROUNDS = 24;
+  const POINTS_PER_WIN = 25;
+
+  const remainingRounds = TOTAL_ROUNDS - data.length;
+  const maxGain = remainingRounds * POINTS_PER_WIN;
+
+  const probabilityData = sorted.slice(0, 5).map((d, i) => {
+    const leaderPts = sorted[0].pts;
+    const deficit = leaderPts - d.pts;
+
+    let base = (maxGain - deficit) / maxGain;
+
+    // pressure scaling (big gaps punish harder)
+    base = Math.pow(base, 1.6);
+
+    // leader dominance boost
+    if (i === 0) base *= 1.25;
+
+    // rank decay
+    base *= 1 - i * 0.12;
+
+    return {
+      name: d.name,
+      raw: Math.max(0, base),
+    };
+  });
+
+  // normalize to 100%
+  const total = probabilityData.reduce((s, d) => s + d.raw, 0);
+
+  const finalProbability = probabilityData.map((d) => ({
+    name: d.name,
+    probability: ((d.raw / total) * 100).toFixed(1),
+  }));
+
+  /* ================= MOMENTUM ================= */
+
+  const momentumData = sorted.slice(0, 5).map((d) => {
+    let recentGain = 0;
+
+    const lastRounds = data.slice(-3);
+
+    lastRounds.forEach((round, idx) => {
+      const prev = idx > 0 ? lastRounds[idx - 1][d.name] || 0 : 0;
+      const curr = round[d.name] || 0;
+
+      recentGain += curr - prev;
+    });
+
+    return {
+      name: d.name,
+      momentum: recentGain,
+    };
+  });
+
   /* 🎬 STAGING */
   useEffect(() => {
     if (data.length === 0) return;
@@ -116,9 +170,7 @@ export default function ChampionshipPage() {
     return {
       round: r.round,
       gap:
-        sortedRound.length >= 2
-          ? sortedRound[0].pts - sortedRound[1].pts
-          : 0,
+        sortedRound.length >= 2 ? sortedRound[0].pts - sortedRound[1].pts : 0,
     };
   });
 
@@ -132,12 +184,9 @@ export default function ChampionshipPage() {
 
   return (
     <div className="championship-container">
-
       {/* HEADER */}
       <div className="championship-header">
-        <h1 className="championship-title">
-          Championship Progression
-        </h1>
+        <h1 className="championship-title">Championship Progression</h1>
         <div className="title-glow" />
       </div>
 
@@ -145,10 +194,7 @@ export default function ChampionshipPage() {
       <div className={`battle-panel ${stage >= 1 ? "show" : ""}`}>
         <div className="battle-gap">
           <span className="battle-label">Gap</span>
-          <span
-            className="battle-value"
-            style={{ color: gapColor }}
-          >
+          <span className="battle-value" style={{ color: gapColor }}>
             {animatedGap} pts
           </span>
         </div>
@@ -159,7 +205,11 @@ export default function ChampionshipPage() {
         {sorted.slice(0, 5).map((d, i) => (
           <div
             key={d.name}
-            className="standing-card"
+            className={`standing-card 
+    ${i === 0 ? "gold" : ""} 
+    ${i === 1 ? "silver" : ""} 
+    ${i === 2 ? "bronze" : ""}
+  `}
             style={{ animationDelay: `${i * 0.12}s` }}
           >
             <div className="left">
@@ -172,6 +222,83 @@ export default function ChampionshipPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* 🏁 TITLE FIGHT */}
+      <div className={`probability-panel ${stage >= 3 ? "show" : ""}`}>
+        <h3 className="probability-title">TITLE FIGHT PROJECTION</h3>
+        {/* 🧭 MOMENTUM LEGEND */}
+        <div className="momentum-legend">
+          <span className="legend-item up">▲ Positive Momentum</span>
+          <span className="legend-item down">▼ Negative Momentum</span>
+        </div>
+        {finalProbability.map((d, i) => {
+          const momentum =
+            momentumData.find((m) => m.name === d.name)?.momentum || 0;
+
+          // 🎨 dynamic F1 color per position
+          const colors = [
+            "#ffd700", // gold
+            "#c0c0c0", // silver
+            "#cd7f32", // bronze
+            "#ff1744", // red
+            "#00e5ff", // cyan
+          ];
+
+          return (
+            <div
+              key={d.name}
+              className={`probability-row p${i + 1}`}
+              style={{ animationDelay: `${i * 0.1}s` }}
+            >
+              {/* LEFT */}
+              <div className="prob-left">
+                <span className="prob-rank">#{i + 1}</span>
+                <span className="prob-driver">{d.name}</span>
+              </div>
+
+              {/* BAR */}
+              <div className="prob-bar-container">
+                <div
+                  className="prob-bar"
+                  style={{
+                    width: `${d.probability}%`,
+                    background: `linear-gradient(90deg, ${colors[i]}, rgba(255,255,255,0.15))`,
+                  }}
+                >
+                  {/* flowing light */}
+                  <div className="flow" />
+
+                  {/* live pulse overlay */}
+                  <div
+                    className="pulse"
+                    style={{
+                      background: colors[i],
+                      opacity: 0.25,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* RIGHT */}
+              <div className="prob-right">
+                <span className="prob-value">{d.probability}%</span>
+
+                <span
+                  className={`momentum ${
+                    momentum > 0 ? "up" : momentum < 0 ? "down" : ""
+                  }`}
+                >
+                  {momentum > 0
+                    ? `▲ +${momentum}`
+                    : momentum < 0
+                      ? `▼ ${momentum}`
+                      : "—"}
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* 📉 GAP CHART */}
@@ -225,7 +352,7 @@ export default function ChampionshipPage() {
               if (!payload || payload.length === 0) return;
 
               const active = payload.reduce((max, curr) =>
-                curr.value > max.value ? curr : max
+                curr.value > max.value ? curr : max,
               );
 
               setHoveredDriver(active.dataKey);
@@ -241,16 +368,12 @@ export default function ChampionshipPage() {
             <Legend />
 
             {drivers.map((driver, index) => {
-              const rank = sorted.findIndex(
-                (d) => d.name === driver
-              );
+              const rank = sorted.findIndex((d) => d.name === driver);
 
-              let opacity =
-                rank < 3 ? 1 : rank < 8 ? 0.7 : 0.4;
+              let opacity = rank < 3 ? 1 : rank < 8 ? 0.7 : 0.4;
 
               if (hoveredDriver) {
-                opacity =
-                  driver === hoveredDriver ? 1 : 0.15;
+                opacity = driver === hoveredDriver ? 1 : 0.15;
               }
 
               return (
