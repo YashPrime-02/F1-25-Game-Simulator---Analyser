@@ -4,7 +4,6 @@ import { fetchDriverStandings } from "../../services/raceService";
 import { useSeason } from "../../context/SeasonContext";
 
 export default function TopBar() {
-
   const { season, setSeason, seasons, refresh } = useSeason();
 
   const [leader, setLeader] = useState(null);
@@ -13,11 +12,14 @@ export default function TopBar() {
   const [muted, setMuted] = useState(false);
   const [beat, setBeat] = useState(0);
 
+  const [loading, setLoading] = useState(false); // ✅ NEW (UX)
+
   /* ========================
-     LOAD STANDINGS (UPDATED)
+     LOAD STANDINGS (SAFE + REACTIVE)
   ======================== */
 
   useEffect(() => {
+    let cancelled = false; 
 
     if (!season?.id) {
       setLeader(null);
@@ -26,43 +28,56 @@ export default function TopBar() {
     }
 
     const loadStandings = async () => {
-
       try {
+        setLoading(true);
 
         const standings = await fetchDriverStandings(season.id);
 
-        if (!standings.length) {
+        if (cancelled) return;
+
+        if (!standings || !standings.length) {
           setLeader(null);
           setGap(0);
           return;
         }
 
-        setLeader(standings[0].driverName);
+        const newLeader = standings[0].driverName;
+
+        let newGap = 0;
 
         if (standings.length > 1) {
-          setGap(
-            standings[0].totalPoints - standings[1].totalPoints
-          );
-        } else {
-          setGap(0);
+          newGap =
+            standings[0].totalPoints -
+            standings[1].totalPoints;
         }
 
-      } catch (err) {
-        console.error(err);
-      }
+        // ✅ update only if changed (prevents unnecessary re-render)
+        setLeader((prev) => (prev !== newLeader ? newLeader : prev));
+        setGap((prev) => (prev !== newGap ? newGap : prev));
 
+      } catch (err) {
+        if (!cancelled) {
+          console.error(err);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
     };
 
     loadStandings();
 
-  }, [season, refresh]); // ✅ KEY CHANGE
+    return () => {
+      cancelled = true; // ✅ cleanup
+    };
+  }, [season?.id, refresh]); // ✅ FIXED DEPENDENCY
 
   /* ========================
      MUSIC
   ======================== */
 
   useEffect(() => {
-
     setMuted(localStorage.getItem("music-muted") === "true");
 
     const beatListener = (e) => setBeat(e.detail);
@@ -71,11 +86,9 @@ export default function TopBar() {
 
     return () =>
       window.removeEventListener("music-beat", beatListener);
-
   }, []);
 
   const toggleMute = () => {
-
     const newState = !muted;
 
     setMuted(newState);
@@ -83,7 +96,6 @@ export default function TopBar() {
     localStorage.setItem("music-muted", newState);
 
     window.dispatchEvent(new Event("music-toggle"));
-
   };
 
   /* ========================
@@ -91,48 +103,40 @@ export default function TopBar() {
   ======================== */
 
   return (
-
     <div className="topbar">
-
       <select
         className="season-dropdown"
         value={season?.id || ""}
         onChange={(e) => {
-
           const selected = seasons.find(
-            s => s.id === Number(e.target.value)
+            (s) => s.id === Number(e.target.value)
           );
 
           setSeason(selected);
-
         }}
       >
-
-        {seasons.map(s => (
-
+        {seasons.map((s) => (
           <option key={s.id} value={s.id}>
             Season {s.seasonNumber}
           </option>
-
         ))}
-
       </select>
 
       <div className="status">
+        Leader :{" "}
+        {loading
+          ? "Updating..."
+          : leader || "No races yet"}
 
-        Leader : {leader || "No races yet"}
-
-        {gap > 0 && (
+        {gap > 0 && !loading && (
           <span> | Gap {gap} pts</span>
         )}
-
       </div>
 
       <button
         className={`mute-btn ${muted ? "muted" : ""}`}
         onClick={toggleMute}
       >
-
         <div
           className="led-ring"
           style={{
@@ -141,11 +145,7 @@ export default function TopBar() {
         />
 
         {muted ? "MUTED" : "LIVE AUDIO"}
-
       </button>
-
     </div>
-
   );
-
 }

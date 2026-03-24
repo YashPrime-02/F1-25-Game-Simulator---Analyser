@@ -521,7 +521,7 @@ If the player finished inside the top 10 or had an interesting race, highlight t
 Keep it realistic like Sky Sports commentary.
 
 Write ONE short broadcast line.
-Under 40 words. No line breaks.
+Under 60 words. No line breaks.
 `;
 
     let text = await generateAIText(prompt);
@@ -725,7 +725,7 @@ exports.getRaceRecapAI = async (req, res) => {
 You are a professional Formula 1 commentator.
 
 Write a dramatic race recap.
-Under 200 words.
+Under 250 words.
 No line breaks.
 
 Season Phase: ${seasonPhase}

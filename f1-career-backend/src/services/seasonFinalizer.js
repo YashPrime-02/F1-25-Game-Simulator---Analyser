@@ -28,7 +28,7 @@ Player Driver: ${playerDriverName}
 
 Mention the champion but also acknowledge the player's season journey if relevant.
 
-Keep it under 200 words.
+Keep it under 250 words.
 No line breaks.
 `;
 
