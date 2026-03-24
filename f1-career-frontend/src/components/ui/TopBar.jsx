@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
 import "./topbar.css";
 import { fetchDriverStandings } from "../../services/raceService";
-import { fetchAllSeasons } from "../../services/seasonService";
 import { useSeason } from "../../context/SeasonContext";
 
 export default function TopBar() {
 
-  const { season, setSeason } = useSeason();
+  const { season, setSeason, seasons, refresh } = useSeason();
 
-  const [seasons, setSeasons] = useState([]);
   const [leader, setLeader] = useState(null);
   const [gap, setGap] = useState(0);
 
@@ -16,37 +14,16 @@ export default function TopBar() {
   const [beat, setBeat] = useState(0);
 
   /* ========================
-     LOAD SEASONS
+     LOAD STANDINGS (UPDATED)
   ======================== */
 
   useEffect(() => {
 
-    const loadSeasons = async () => {
-
-      try {
-
-        const data = await fetchAllSeasons();
-        setSeasons(data);
-
-      } catch (err) {
-
-        console.error("Failed loading seasons", err);
-
-      }
-
-    };
-
-    loadSeasons();
-
-  }, []);
-
-  /* ========================
-     LOAD STANDINGS
-  ======================== */
-
-  useEffect(() => {
-
-    if (!season?.id) return;
+    if (!season?.id) {
+      setLeader(null);
+      setGap(0);
+      return;
+    }
 
     const loadStandings = async () => {
 
@@ -54,29 +31,31 @@ export default function TopBar() {
 
         const standings = await fetchDriverStandings(season.id);
 
-        if (!standings.length) return;
+        if (!standings.length) {
+          setLeader(null);
+          setGap(0);
+          return;
+        }
 
         setLeader(standings[0].driverName);
 
         if (standings.length > 1) {
-
           setGap(
             standings[0].totalPoints - standings[1].totalPoints
           );
-
+        } else {
+          setGap(0);
         }
 
       } catch (err) {
-
         console.error(err);
-
       }
 
     };
 
     loadStandings();
 
-  }, [season]);
+  }, [season, refresh]); // ✅ KEY CHANGE
 
   /* ========================
      MUSIC
@@ -115,8 +94,6 @@ export default function TopBar() {
 
     <div className="topbar">
 
-      {/* SEASON SELECTOR */}
-
       <select
         className="season-dropdown"
         value={season?.id || ""}
@@ -141,8 +118,6 @@ export default function TopBar() {
 
       </select>
 
-      {/* LEADER */}
-
       <div className="status">
 
         Leader : {leader || "No races yet"}
@@ -152,8 +127,6 @@ export default function TopBar() {
         )}
 
       </div>
-
-      {/* AUDIO */}
 
       <button
         className={`mute-btn ${muted ? "muted" : ""}`}
