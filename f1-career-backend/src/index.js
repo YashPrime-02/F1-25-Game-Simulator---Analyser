@@ -19,6 +19,7 @@ const playerCareerRoutes = require("./routes/playerCareerRoutes");
 const teamRoutes = require("./routes/teams");
 const driverRoutes = require("./routes/drivers");
 const standingsRoutes = require("./routes/standingRoutes");
+const newsRoutes = require("./routes/news");
 
 /* =========================================================
    MODELS
@@ -49,6 +50,7 @@ app.use("/api/player-career", playerCareerRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/drivers", driverRoutes);
 app.use("/api/standings", standingsRoutes);
+app.use("/api/news", newsRoutes);
 
 /* =========================================================
    HEALTH CHECK

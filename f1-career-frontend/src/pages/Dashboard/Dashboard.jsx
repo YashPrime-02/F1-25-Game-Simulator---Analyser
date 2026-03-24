@@ -3,7 +3,6 @@ import { useSeason } from "../../context/SeasonContext";
 import {
   fetchChampionshipSummary,
   fetchDriverStandings,
-  fetchSeasonNews,
   fetchSeasonCommentary,
   fetchLatestRace,
 } from "../../services/raceService";
@@ -17,7 +16,6 @@ import { useNavigate } from "react-router-dom";
 import "./dashboard.css";
 
 export default function Dashboard() {
-
   /* ===============================
      STATE
   =============================== */
@@ -41,32 +39,136 @@ export default function Dashboard() {
   });
 
   /* ===============================
+     🧠 FRONTEND NEWS ENGINE
+  =============================== */
+
+  const generateFrontendNews = (standings, summary, commentary) => {
+    const newsItems = [];
+
+    if (!standings || standings.length === 0) return newsItems;
+
+    const leader = standings[0];
+    const second = standings[1];
+
+    /* ======================
+     🏆 LEADER STORY
+  ====================== */
+    newsItems.push({
+      type: "WINNER",
+      text: `${leader.driverName} leads the championship after a strong run of form.`,
+    });
+
+    /* ======================
+     🔥 DOMINANCE / TITLE FIGHT
+  ====================== */
+    if (second) {
+      const gap = leader.totalPoints - second.totalPoints;
+
+      if (gap >= 30) {
+        newsItems.push({
+          type: "DOMINANCE",
+          text: `${leader.driverName} pulling away — the title race slipping out of reach for others.`,
+        });
+      } else if (gap <= 10) {
+        newsItems.push({
+          type: "RIVALRY",
+          text: `${leader.driverName} and ${second.driverName} locked in an intense title fight.`,
+        });
+      }
+    }
+
+    /* ======================
+     ⚔️ RIVALRY FROM SUMMARY
+  ====================== */
+    if (summary?.rivalry) {
+      newsItems.push({
+        type: "RIVALRY",
+        text: summary.rivalry,
+      });
+    }
+
+    /* ======================
+     🏎️ STREAK DETECTION
+  ====================== */
+    if (commentary && commentary.length >= 3) {
+      const recent = commentary.slice(0, 3);
+
+      const sameWinner = recent.every(
+        (c) => c.commentary && c.commentary.includes(leader.driverName),
+      );
+
+      if (sameWinner) {
+        newsItems.push({
+          type: "DOMINANCE",
+          text: `${leader.driverName} unstoppable — three races in a row.`,
+        });
+      }
+    }
+
+    /* ======================
+     💥 CRASH / DRAMA DETECTION
+  ====================== */
+    if (commentary && commentary.length > 0) {
+      const latest = commentary[0].commentary.toLowerCase();
+
+      if (
+        latest.includes("crash") ||
+        latest.includes("collision") ||
+        latest.includes("dnf") ||
+        latest.includes("incident")
+      ) {
+        newsItems.push({
+          type: "RIVALRY",
+          text: `Chaos on track — major incident shaking up the race outcome.`,
+        });
+      }
+    }
+
+    /* ======================
+     📉 STRUGGLE
+  ====================== */
+    if (standings.length > 5) {
+      const struggling = standings[4];
+
+      newsItems.push({
+        type: "STRUGGLE",
+        text: `${struggling.driverName} struggling to match the front runners.`,
+      });
+    }
+
+    /* ======================
+     🎙 LAST RACE
+  ====================== */
+    if (commentary && commentary.length > 0) {
+      const latest = commentary[0];
+
+      newsItems.push({
+        type: "UPDATE",
+        text: `Round ${latest.round}: ${latest.commentary}`,
+      });
+    }
+
+    return newsItems.slice(0, 6);
+  };
+
+  /* ===============================
      LOAD DASHBOARD DATA
   =============================== */
 
   useEffect(() => {
-
     if (!season || !season.id) return;
 
     let cancelled = false;
 
     const loadDashboard = async () => {
-
       try {
-
-        const [
-          summaryData,
-          standings,
-          newsData,
-          commentaryData,
-          latestRace
-        ] = await Promise.all([
-          fetchChampionshipSummary(season.id),
-          fetchDriverStandings(season.id),
-          fetchSeasonNews(season.id),
-          fetchSeasonCommentary(season.id),
-          fetchLatestRace(season.id),
-        ]);
+        const [summaryData, standings, commentaryData, latestRace] =
+          await Promise.all([
+            fetchChampionshipSummary(season.id),
+            fetchDriverStandings(season.id),
+            fetchSeasonCommentary(season.id),
+            fetchLatestRace(season.id),
+          ]);
 
         if (cancelled) return;
 
@@ -78,16 +180,23 @@ export default function Dashboard() {
           summaryData || {
             phase: "Season just started",
             momentum: "No momentum yet",
-            rivalry: null
-          }
+            rivalry: null,
+          },
         );
 
+        setCommentary(commentaryData || []);
+
         /* ===============================
-           NEWS + COMMENTARY
+           📰 GENERATE NEWS (KEY CHANGE)
         =============================== */
 
-        setNews(newsData || []);
-        setCommentary(commentaryData || []);
+        const generatedNews = generateFrontendNews(
+          standings,
+          summaryData,
+          commentaryData,
+        );
+
+        setNews(generatedNews);
 
         /* ===============================
            STORE LATEST RACE ID
@@ -102,33 +211,22 @@ export default function Dashboard() {
         =============================== */
 
         if (standings && standings.length > 0) {
-
           setLeader(standings[0].driverName);
 
           if (standings.length > 1) {
-            setGap(
-              standings[0].totalPoints -
-              standings[1].totalPoints
-            );
+            setGap(standings[0].totalPoints - standings[1].totalPoints);
           } else {
             setGap(0);
           }
-
         } else {
-
           setLeader(null);
           setGap(0);
-
         }
-
       } catch (err) {
-
         if (!cancelled) {
           console.error("Dashboard load failed", err);
         }
-
       }
-
     };
 
     loadDashboard();
@@ -136,7 +234,6 @@ export default function Dashboard() {
     return () => {
       cancelled = true;
     };
-
   }, [season?.id, setLatestRaceId]);
 
   /* ===============================
@@ -144,14 +241,12 @@ export default function Dashboard() {
   =============================== */
 
   if (!summary) {
-
     return (
       <GlassCard>
         <h2>Championship Loading...</h2>
         <p>Run a race to generate standings.</p>
       </GlassCard>
     );
-
   }
 
   /* ===============================
@@ -159,13 +254,8 @@ export default function Dashboard() {
   =============================== */
 
   return (
-
     <div className="dashboard-grid">
-
-      {/* ================= MAIN BROADCAST PANEL ================= */}
-
       <GlassCard className="broadcast-main">
-
         <div className="glass-news-header">
           <span className="live-dot"></span>
           <h2>Race Broadcast Center</h2>
@@ -176,100 +266,59 @@ export default function Dashboard() {
         <p>{summary.phase || "Season just started"}</p>
 
         {season?.latestRaceId && (
-
           <button
             className="watch-btn"
-            onClick={() =>
-              navigate(`/recap/${season.latestRaceId}`)
-            }
+            onClick={() => navigate(`/recap/${season.latestRaceId}`)}
           >
             ▶ Watch Last Race Recap
           </button>
-
         )}
-
       </GlassCard>
-
-      {/* ================= LEADER ================= */}
 
       <GlassCard>
         <h2>Championship Leader</h2>
         <p>{leader || "No races completed yet"}</p>
       </GlassCard>
 
-      {/* ================= GAP ================= */}
-
       <GlassCard>
         <h2>Points Gap</h2>
         <Counter value={gap} /> Points
       </GlassCard>
-
-      {/* ================= MOMENTUM ================= */}
 
       <GlassCard>
         <h2>Momentum</h2>
         <p>{summary.momentum || "No momentum yet"}</p>
       </GlassCard>
 
-      {/* ================= RIVALRY ================= */}
-
       {summary.rivalry && (
-
         <GlassCard>
           <h2>Rivalry Watch</h2>
           <p>{summary.rivalry}</p>
         </GlassCard>
-
       )}
 
-      {/* ================= BREAKING NEWS ================= */}
-
+      {/* 📰 NEWS NOW ALWAYS WORKS */}
       {news.length > 0 && (
+        <div className="broadcast-main news-panel">
+          <h2>📰 Race Intelligence Feed</h2>
 
-        <GlassCard className="broadcast-main">
+          <div className="news-feed">
+            {news.map((n, i) => (
+              <div key={i} className={`news-item ${n.type.toLowerCase()}`}>
+                <span className="news-icon">
+                  {n.type === "WINNER" && "🏆"}
+                  {n.type === "DOMINANCE" && "🔥"}
+                  {n.type === "RIVALRY" && "⚔️"}
+                  {n.type === "STRUGGLE" && "📉"}
+                  {n.type === "UPDATE" && "🎙"}
+                </span>
 
-          <div className="glass-news-header">
-            <span className="live-dot small"></span>
-            <h2>Breaking Paddock News</h2>
+                <span className="news-text">{n.text}</span>
+              </div>
+            ))}
           </div>
-
-          <h4>{news[0].headline}</h4>
-          <p>{news[0].content}</p>
-
-        </GlassCard>
-
-      )}
-
-      {/* ================= COMMENTARY TICKER ================= */}
-
-      {commentary.length > 0 && (
-
-        <div className="broadcast-main commentary-panel">
-
-          <h2>🎙 Last Race Commentary Feed</h2>
-
-          <div className="ticker">
-
-            <div className="ticker-text">
-
-              {commentary
-                .slice(0, 5)
-                .map(
-                  (c) =>
-                    `Round ${c.round}: ${c.commentary}   •   `
-                )
-                .join("")}
-
-            </div>
-
-          </div>
-
         </div>
-
       )}
-
     </div>
-
   );
-
 }

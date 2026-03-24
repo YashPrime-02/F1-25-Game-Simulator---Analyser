@@ -282,3 +282,130 @@
   min-height: 160px;  
    animation: cardEnter .45s ease forwards;
 }
+
+
+.news-panel {
+  margin-top: 35px;
+
+  padding: 22px;
+
+  border-radius: 14px;
+
+  /* 📰 Newspaper-style layered background */
+  background:
+    linear-gradient(
+      rgba(255, 248, 220, 0.04),
+      rgba(255, 248, 220, 0.02)
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.02) 0px,
+      rgba(255, 255, 255, 0.02) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(circle at top, #1a1a1a, #050505);
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.7),
+    inset 0 0 40px rgba(255, 248, 220, 0.03);
+}
+
+.news-panel h2 {
+  font-family: "Orbitron", sans-serif;
+
+  color: #e10600;
+
+  margin-bottom: 16px;
+
+  letter-spacing: 1px;
+
+  text-shadow: 0 0 12px rgba(225, 6, 0, 0.6);
+}
+
+.news-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.news-item {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 12px 14px;
+
+  border-radius: 10px;
+
+  font-family: "Orbitron", sans-serif;
+
+  font-size: 16px;
+
+  background: rgba(255, 255, 255, 0.04);
+
+  border-left: 3px solid #e10600;
+
+  transition: all 0.3s ease;
+}
+
+.news-item:hover {
+  transform: translateX(6px);
+
+  background: rgba(255, 255, 255, 0.08);
+
+  box-shadow:
+    0 0 12px rgba(225, 6, 0, 0.4),
+    0 12px 25px rgba(0, 0, 0, 0.6);
+}
+
+.news-icon {
+  font-size: 16px;
+
+  min-width: 20px;
+
+  text-align: center;
+}
+
+.news-item.winner {
+  border-left-color: #ffd700;
+}
+
+.news-item.dominance {
+  border-left-color: #ff3c3c;
+}
+
+.news-item.rivalry {
+  border-left-color: #ff00aa;
+}
+
+.news-item.struggle {
+  border-left-color: #00aaff;
+}
+
+.news-item.update {
+  border-left-color: #aaaaaa;
+}
+
+.news-item.rivalry {
+  border-left-color: #ff004c;
+
+  box-shadow: 0 0 10px rgba(255, 0, 76, 0.3);
+}
+
+.news-item.dominance {
+  border-left-color: #ff3c3c;
+
+  box-shadow:
+    0 0 12px rgba(255, 60, 60, 0.4),
+    0 0 20px rgba(255, 60, 60, 0.2);
+}
+
+.news-item.winner {
+  border-left-color: #ffd700;
+
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
