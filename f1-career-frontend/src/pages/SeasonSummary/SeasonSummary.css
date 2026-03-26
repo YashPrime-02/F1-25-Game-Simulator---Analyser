@@ -26,59 +26,78 @@
    PROGRESS BAR
 ====================== */
 
+/* CONTAINER */
 .progress-wrapper {
   position: relative;
-
-  margin-bottom: 10px;
+  width: 100%;
 }
 
+/* PROGRESS BAR */
 .progress-bar {
   height: 14px;
-
   border-radius: 10px;
-
   background: rgba(255, 255, 255, 0.08);
-
   overflow: hidden;
+  position: relative;
 }
 
-/* PROGRESS FILL */
+/* ANIMATED FLOW LINES (F1 SPEED EFFECT) */
+.progress-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
 
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 10px,
+    rgba(255, 255, 255, 0.08) 12px
+  );
+
+  animation: flow 1s linear infinite;
+}
+
+@keyframes flow {
+  from { transform: translateX(0); }
+  to { transform: translateX(20px); }
+}
+
+/* FILL */
 .progress-fill {
   height: 100%;
-
   background: linear-gradient(90deg, #e10600, #ff3c3c);
-
-  box-shadow: 0 0 12px rgba(225, 6, 0, 0.9);
-
+  box-shadow: 0 0 16px rgba(225, 6, 0, 1);
   transition: width 0.4s ease;
 }
 
-/* TELEMETRY MARKER */
+/* PULSE ON ACTIVE */
+.progress-fill.active {
+  animation: pulse 1.2s infinite;
+}
 
+@keyframes pulse {
+  0% { box-shadow: 0 0 8px #e10600; }
+  50% { box-shadow: 0 0 22px #ff3c3c; }
+  100% { box-shadow: 0 0 8px #e10600; }
+}
+
+/* MARKER (LIKE CAR POSITION) */
 .progress-marker {
   position: absolute;
-
   top: -6px;
-
   width: 4px;
   height: 26px;
-
   background: #fff;
-
-  box-shadow: 0 0 12px white;
-
+  box-shadow: 0 0 14px white;
   transition: left 0.4s ease;
 }
 
 /* TEXT */
-
 .progress-text {
   margin-top: 8px;
-
   font-family: "Orbitron", sans-serif;
-
   color: #aaa;
+  letter-spacing: 1px;
 }
 
 /* ======================
@@ -224,17 +243,15 @@
 }
 
 .race-label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    font-size: 12px;
+    line-height: 1;
+    white-space: nowrap;
+    margin-top: 5%;
 
-  gap: 6px;
-
-  font-size: 12px;
-
-  line-height: 1;
-
-  white-space: nowrap;
 }
 
 .race-label {
@@ -246,13 +263,9 @@
 }
 
 .race-track {
-  margin-top: 22px;
-
-  display: grid;
-
-  grid-template-columns: repeat(12, 1fr);
-
-  gap: 14px;
+    margin-top: 22px;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
 }
 
 .race-track {
