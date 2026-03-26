@@ -1,89 +1,83 @@
 import { useEffect, useState } from "react";
 import "./topbar.css";
 import { fetchDriverStandings } from "../../services/raceService";
-import { fetchAllSeasons } from "../../services/seasonService";
 import { useSeason } from "../../context/SeasonContext";
 
 export default function TopBar() {
+  const { season, setSeason, seasons, refresh } = useSeason();
 
-  const { season, setSeason } = useSeason();
-
-  const [seasons, setSeasons] = useState([]);
   const [leader, setLeader] = useState(null);
   const [gap, setGap] = useState(0);
 
   const [muted, setMuted] = useState(false);
   const [beat, setBeat] = useState(0);
 
+  const [loading, setLoading] = useState(false); // ✅ NEW (UX)
+
   /* ========================
-     LOAD SEASONS
+     LOAD STANDINGS (SAFE + REACTIVE)
   ======================== */
 
   useEffect(() => {
+    let cancelled = false; 
 
-    const loadSeasons = async () => {
-
-      try {
-
-        const data = await fetchAllSeasons();
-        setSeasons(data);
-
-      } catch (err) {
-
-        console.error("Failed loading seasons", err);
-
-      }
-
-    };
-
-    loadSeasons();
-
-  }, []);
-
-  /* ========================
-     LOAD STANDINGS
-  ======================== */
-
-  useEffect(() => {
-
-    if (!season?.id) return;
+    if (!season?.id) {
+      setLeader(null);
+      setGap(0);
+      return;
+    }
 
     const loadStandings = async () => {
-
       try {
+        setLoading(true);
 
         const standings = await fetchDriverStandings(season.id);
 
-        if (!standings.length) return;
+        if (cancelled) return;
 
-        setLeader(standings[0].driverName);
-
-        if (standings.length > 1) {
-
-          setGap(
-            standings[0].totalPoints - standings[1].totalPoints
-          );
-
+        if (!standings || !standings.length) {
+          setLeader(null);
+          setGap(0);
+          return;
         }
 
+        const newLeader = standings[0].driverName;
+
+        let newGap = 0;
+
+        if (standings.length > 1) {
+          newGap =
+            standings[0].totalPoints -
+            standings[1].totalPoints;
+        }
+
+        // ✅ update only if changed (prevents unnecessary re-render)
+        setLeader((prev) => (prev !== newLeader ? newLeader : prev));
+        setGap((prev) => (prev !== newGap ? newGap : prev));
+
       } catch (err) {
-
-        console.error(err);
-
+        if (!cancelled) {
+          console.error(err);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
-
     };
 
     loadStandings();
 
-  }, [season]);
+    return () => {
+      cancelled = true; // ✅ cleanup
+    };
+  }, [season?.id, refresh]); // ✅ FIXED DEPENDENCY
 
   /* ========================
      MUSIC
   ======================== */
 
   useEffect(() => {
-
     setMuted(localStorage.getItem("music-muted") === "true");
 
     const beatListener = (e) => setBeat(e.detail);
@@ -92,11 +86,9 @@ export default function TopBar() {
 
     return () =>
       window.removeEventListener("music-beat", beatListener);
-
   }, []);
 
   const toggleMute = () => {
-
     const newState = !muted;
 
     setMuted(newState);
@@ -104,7 +96,6 @@ export default function TopBar() {
     localStorage.setItem("music-muted", newState);
 
     window.dispatchEvent(new Event("music-toggle"));
-
   };
 
   /* ========================
@@ -112,54 +103,40 @@ export default function TopBar() {
   ======================== */
 
   return (
-
     <div className="topbar">
-
-      {/* SEASON SELECTOR */}
-
       <select
         className="season-dropdown"
         value={season?.id || ""}
         onChange={(e) => {
-
           const selected = seasons.find(
-            s => s.id === Number(e.target.value)
+            (s) => s.id === Number(e.target.value)
           );
 
           setSeason(selected);
-
         }}
       >
-
-        {seasons.map(s => (
-
+        {seasons.map((s) => (
           <option key={s.id} value={s.id}>
             Season {s.seasonNumber}
           </option>
-
         ))}
-
       </select>
 
-      {/* LEADER */}
-
       <div className="status">
+        Leader :{" "}
+        {loading
+          ? "Updating..."
+          : leader || "No races yet"}
 
-        Leader : {leader || "No races yet"}
-
-        {gap > 0 && (
+        {gap > 0 && !loading && (
           <span> | Gap {gap} pts</span>
         )}
-
       </div>
-
-      {/* AUDIO */}
 
       <button
         className={`mute-btn ${muted ? "muted" : ""}`}
         onClick={toggleMute}
       >
-
         <div
           className="led-ring"
           style={{
@@ -168,11 +145,7 @@ export default function TopBar() {
         />
 
         {muted ? "MUTED" : "LIVE AUDIO"}
-
       </button>
-
     </div>
-
   );
-
 }

@@ -12,12 +12,17 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import "./manualRace.css";
 import useBackgroundAudio from "../../hooks/useBackgroundAudio";
-
-
 import f1Music from "../../assets/f1Drive.mp3";
+
 /* ================= SORTABLE DRIVER ================= */
 
-function SortableDriver({ driver, index, toggleFastestLap, toggleDNF }) {
+function SortableDriver({
+  driver,
+  index,
+  toggleFastestLap,
+  toggleDNF,
+  changeIncident,
+}) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: driver.id });
 
@@ -30,7 +35,9 @@ function SortableDriver({ driver, index, toggleFastestLap, toggleDNF }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`driver-row ${driver.fastestLap ? "fl-active" : ""}`}
+      className={`driver-row 
+        ${driver.fastestLap ? "fl-active" : ""} 
+        ${driver.dnf ? "dnf-active" : ""}`}
       {...attributes}
       {...listeners}
     >
@@ -41,29 +48,48 @@ function SortableDriver({ driver, index, toggleFastestLap, toggleDNF }) {
       </div>
 
       <div className="control-col" onPointerDown={(e) => e.stopPropagation()}>
+        {/* FASTEST LAP */}
         <label className="fl-box">
           <input
             type="checkbox"
             checked={driver.fastestLap}
+            disabled={driver.dnf}
             onChange={() => toggleFastestLap(driver.id)}
           />
-          <span>Fastest Lap</span>
+          <span>FL</span>
         </label>
 
-        {/* <label className="dnf-box">
+        {/* DNF */}
+        <label className="dnf-box">
           <input
             type="checkbox"
             checked={driver.dnf}
             onChange={() => toggleDNF(driver.id)}
           />
           <span>DNF</span>
-        </label> */}
+        </label>
+
+        {/* INCIDENT */}
+        <select
+          className="incident-select"
+          value={driver.incident}
+          disabled={!driver.dnf}
+          onChange={(e) => changeIncident(driver.id, e.target.value)}
+        >
+          <option value="none">Incident</option>
+          <option value="crash">💥 Crash</option>
+          <option value="collision">🤝 Collision</option>
+          <option value="engine">⚙️ Engine</option>
+          <option value="mechanical">🔧 Mechanical</option>
+          <option value="spin">🌀 Spin</option>
+        </select>
       </div>
     </div>
   );
 }
 
 /* ================= MAIN ================= */
+
 export default function ManualRaceEntry() {
   const { season } = useSeason();
 
@@ -73,23 +99,30 @@ export default function ManualRaceEntry() {
   const [recap, setRecap] = useState(null);
   const [recapLoading, setRecapLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [commentary, setCommentary] = useState([]);
+  const [weather, setWeather] = useState("dry");
+
   const [toast, setToast] = useState(null);
+  const [toastType, setToastType] = useState("success");
+
   const [countdown, setCountdown] = useState(null);
+  const [phase, setPhase] = useState("idle");
+
+  useBackgroundAudio(f1Music, {
+    volume: 0.35,
+    loop: true,
+  });
+
+  /* ================= TOAST ================= */
+  const showToast = (message, type = "success", duration = 4000) => {
+    setToast(message);
+    setToastType(type);
+    if (duration !== 0) setTimeout(() => setToast(null), duration);
+  };
 
   /* ================= LOAD DRIVERS ================= */
-  
-
-    /* ===============================
-       🎵 BACKGROUND AUDIO
-    =============================== */
-  
-    useBackgroundAudio(f1Music, {
-      volume: 0.35,
-      loop: true,
-    });
-   
-  useEffect(() => {
-    const loadDrivers = async () => {
+  const loadDrivers = async () => {
+    try {
       const res = await api.get("/drivers");
 
       setDrivers(
@@ -97,15 +130,19 @@ export default function ManualRaceEntry() {
           ...d,
           fastestLap: false,
           dnf: false,
+          incident: "none",
         })),
       );
-    };
+    } catch {
+      showToast("Failed to load drivers ❌", "error");
+    }
+  };
 
+  useEffect(() => {
     loadDrivers();
   }, []);
 
-  /* ================= AUTO DETECT WEEKEND ================= */
-
+  /* ================= WEEKEND ================= */
   useEffect(() => {
     const detectWeekend = async () => {
       if (!season?.id) return;
@@ -113,22 +150,23 @@ export default function ManualRaceEntry() {
       try {
         const res = await api.post("/races/weekend", {
           seasonId: season.id,
+          weather,
         });
 
         setRaceWeekendId(res.data.id);
-      } catch (err) {
-        console.log("Weekend detection skipped");
-      }
+      } catch {}
     };
 
-    detectWeekend();
-  }, [season]);
+    if (!raceWeekendId) {
+      detectWeekend();
+    }
+  }, [raceWeekendId, season]);
 
   useEffect(() => {
     if (countdown === null) return;
 
     if (countdown === 0) {
-      window.location.reload();
+      resetRace();
       return;
     }
 
@@ -139,23 +177,52 @@ export default function ManualRaceEntry() {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  /* ================= DRAG ================= */
+  /* ================= DNF HANDLER (FIXED) ================= */
+  const toggleDNF = (id) => {
+    setDrivers((prev) => {
+      const updated = prev.map((d) =>
+        d.id === id
+          ? {
+              ...d,
+              dnf: !d.dnf,
+              fastestLap: false,
+              incident: !d.dnf ? "none" : "crash", // ✅ FIXED LOGIC
+            }
+          : d,
+      );
 
+      return [
+        ...updated.filter((d) => !d.dnf),
+        ...updated.filter((d) => d.dnf),
+      ];
+    });
+  };
+  const changeIncident = (id, value) => {
+    setDrivers((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, incident: value } : d)),
+    );
+  };
+
+  /* ================= DRAG ================= */
   const handleDragEnd = (event) => {
     const { active, over } = event;
-
     if (!over) return;
 
     if (active.id !== over.id) {
       const oldIndex = drivers.findIndex((d) => d.id === active.id);
       const newIndex = drivers.findIndex((d) => d.id === over.id);
 
-      setDrivers(arrayMove(drivers, oldIndex, newIndex));
+      const newOrder = arrayMove(drivers, oldIndex, newIndex);
+
+      // 🔥 KEEP DNF AT BOTTOM ALWAYS
+      setDrivers([
+        ...newOrder.filter((d) => !d.dnf),
+        ...newOrder.filter((d) => d.dnf),
+      ]);
     }
   };
 
   /* ================= FASTEST LAP ================= */
-
   const toggleFastestLap = (id) => {
     setDrivers((prev) =>
       prev.map((d) => ({
@@ -165,110 +232,123 @@ export default function ManualRaceEntry() {
     );
   };
 
-  /* ================= DNF ================= */
+  const resetRace = () => {
+    setSubmitted(false);
+    setRecap(null);
+    setPhase("idle");
+    setCountdown(null);
 
-  const toggleDNF = (id) => {
-    setDrivers((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, dnf: !d.dnf } : d)),
-    );
+    loadDrivers();
+    setRaceWeekendId(null);
   };
 
-  /* ================= SUBMIT ================= */
-
+  /* ================= SUBMIT (FULLY FIXED) ================= */
   const submitResults = async () => {
-  try {
-
-    setLoading(true);
-    setRecapLoading(true);
-
-    const fastestCount = drivers.filter((d) => d.fastestLap).length;
-
-    if (fastestCount !== 1) {
-      alert("Exactly one fastest lap required.");
-      setLoading(false);
-      return;
-    }
-
-    const results = drivers.map((d, index) => ({
-      driverId: d.id,
-      position: index + 1,
-      fastestLap: d.fastestLap,
-      dnf: d.dnf,
-    }));
-
-    /* ===============================
-       SAVE RESULTS
-    =============================== */
-
-    await api.post("/races/results", {
-      raceWeekendId,
-      results,
-    });
-
-    setSubmitted(true);
-
-    /* ===============================
-       FETCH AI RECAP
-    =============================== */
-
     try {
+      setLoading(true);
+      setRecapLoading(true);
+
+      const fastestCount = drivers.filter((d) => d.fastestLap).length;
+
+      if (fastestCount !== 1) {
+        showToast("Exactly one fastest lap required ⚠️", "error");
+        setLoading(false);
+        return;
+      }
+
+      const invalidDNF = drivers.some((d) => d.dnf && d.incident === "none");
+
+      if (invalidDNF) {
+        showToast("DNF must have incident ⚠️", "error");
+        setLoading(false);
+        return;
+      }
+
+      /* ======================
+       🔥 FIXED RESULTS LOGIC
+    ====================== */
+
+      let positionCounter = 1;
+
+      const results = drivers.map((d) => {
+        if (d.dnf) {
+          return {
+            driverId: d.id,
+            position: null, // ✅ FIXED (NO DUPLICATE POSITIONS)
+            fastestLap: false,
+            dnf: true,
+            incident: d.incident,
+          };
+        }
+
+        return {
+          driverId: d.id,
+          position: positionCounter++, // ✅ sequential only for finishers
+          fastestLap: d.fastestLap,
+          dnf: false,
+          incident: null,
+        };
+      });
+
+      /* ======================
+       🛡️ DUPLICATE SAFETY
+    ====================== */
+
+      const uniqueResults = [];
+      const seen = new Set();
+
+      for (const r of results) {
+        if (!seen.has(r.driverId)) {
+          seen.add(r.driverId);
+          uniqueResults.push(r);
+        }
+      }
+
+      console.log("FINAL PAYLOAD:", uniqueResults);
+
+      await api.post("/races/results", {
+        raceWeekendId,
+        results: uniqueResults,
+      });
+
+      setSubmitted(true);
+      setPhase("submitted");
 
       const recapRes = await api.get(`/races/recap-ai/${raceWeekendId}`);
       setRecap(recapRes.data);
 
-    } catch {
-      console.warn("AI recap unavailable.");
+      showToast("Race submitted ✔", "success", 0);
+
+      setCountdown(10); // real countdown (handled by useEffect)
+    } catch (err) {
+      showToast(err.response?.data?.message || "Error ❌", "error");
+    } finally {
+      setLoading(false);
+      setRecapLoading(false);
     }
-
-    /* ===============================
-       SHOW TOAST + START COUNTDOWN
-    =============================== */
-
-    setToast("Race results submitted ✔ Preparing next round...");
-    setCountdown(10);   // start reverse countdown
-
-  } catch (err) {
-
-    alert(err.response?.data?.message || "Submission failed");
-
-  } finally {
-
-    setLoading(false);
-    setRecapLoading(false);
-
-  }
-};
+  };
+  /* ================= UI ================= */
 
   return (
     <div className="manual-wrapper">
-      {toast && (
-        <div className="toast-message">
-          {toast}
-          {countdown !== null && (
-            <span
-              style={{ marginLeft: "8px", fontWeight: "700", color: "#e10600" }}
-            >
-              ({countdown})
-            </span>
-          )}
-        </div>
-      )}
-      <GlassCard className="manual-header">
-        <h2>Manual Race Control</h2>
+      {toast && <div className={`toast-message ${toastType}`}>{toast}</div>}
 
-        {raceWeekendId ? (
-          <div className="weekend-status">Weekend Ready ✔</div>
-        ) : (
-          <div>Preparing Weekend...</div>
-        )}
+      <GlassCard className="manual-header">
+        <h2>Manual Race Control </h2>
+        <h4>DNF TICKED ARE PUSHED TO LAST</h4>
+
+        <div className="weather-control">
+          <label>Weather</label>
+          <select value={weather} onChange={(e) => setWeather(e.target.value)}>
+            <option value="dry">☀️ Dry</option>
+            <option value="rain">🌧 Rain</option>
+            <option value="mixed">🌦 Mixed</option>
+          </select>
+        </div>
       </GlassCard>
 
       {raceWeekendId && (
         <GlassCard className="manual-board">
-          <h3>Drag Drivers to Set Finishing Order</h3>
-
-          <h3>NOTE : PLACE DNF DRIVERS AT LAST MANUALLY PLEASE</h3>
-
           <DndContext
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
@@ -285,34 +365,38 @@ export default function ManualRaceEntry() {
                     index={index}
                     toggleFastestLap={toggleFastestLap}
                     toggleDNF={toggleDNF}
+                    changeIncident={changeIncident}
                   />
                 ))}
               </div>
             </SortableContext>
           </DndContext>
 
-          <button
-            className="submit-btn"
-            onClick={submitResults}
-            disabled={loading || submitted}
-          >
-            {submitted ? "Round Submitted ✔" : "Submit Race Results"}
-          </button>
+          {loading ? (
+            <div className="loader-container">
+              <div className="loader-ring"></div>
+              <p>Submitting race results...</p>
+            </div>
+          ) : (
+            <button
+              className="submit-btn"
+              onClick={submitResults}
+              disabled={submitted}
+            >
+              Submit Race Results
+            </button>
+          )}
+          {submitted && countdown !== null && (
+            <div className="next-round">
+              Next race starts in {countdown}s...
+            </div>
+          )}
         </GlassCard>
       )}
 
-      {recapLoading && (
-        <GlassCard className="recap-loading">
-          <div className="ai-loader">
-            <div className="pulse"></div>
-            <p>AI generating race narrative...</p>
-          </div>
-        </GlassCard>
-      )}
-
-      {recap && !recapLoading && (
-        <GlassCard className="recap-card">
-          <h3>AI Race Recap</h3>
+      {recap && (
+        <GlassCard>
+          <h3>AI Recap</h3>
           <p>{recap.narrative}</p>
         </GlassCard>
       )}

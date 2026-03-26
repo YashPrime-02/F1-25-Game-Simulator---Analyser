@@ -3,7 +3,8 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { useState } from "react";
 
 import F1StartLights from "./components/F1StartLights";
-import IntroVideo from "./components/IntroVideo";
+import IntroVideo from "./context/IntroVideo";
+import DisclaimerPage from "./DisclaimerPage";
 
 import AuthPage from "./pages/Auth/AuthPage";
 import ModeSelect from "./pages/ModeSelect/ModeSelect";
@@ -43,12 +44,21 @@ function App() {
   if (phase === "video") {
     return (
       <ThemeProvider>
-        <IntroVideo onFinish={() => setPhase("app")} />
+        <IntroVideo onFinish={() => setPhase("disclaimer")} />
       </ThemeProvider>
     );
   }
 
-  // Phase 3 → Main Application
+  // Phase 3 → Disclaimer Screen
+  if (phase === "disclaimer") {
+    return (
+      <ThemeProvider>
+        <DisclaimerPage onEnter={() => setPhase("app")} />
+      </ThemeProvider>
+    );
+  }
+
+  // Phase 4 → Main Application
   return (
     <ThemeProvider>
       <F1Background />
@@ -57,6 +67,7 @@ function App() {
         <NavigationSound />
 
         <Routes>
+
           {/* Public Route */}
           <Route
             path="/"
@@ -124,6 +135,7 @@ function App() {
               element={<SeasonSummary />}
             />
           </Route>
+
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

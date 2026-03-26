@@ -163,3 +163,476 @@
     padding: 15px;
   }
 }
+
+
+/* ===== STANDINGS PANEL ===== */
+
+.standings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 600px;
+}
+
+/* CARD */
+.standing-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 16px 20px;
+  border-radius: 14px;
+
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+
+  backdrop-filter: blur(12px);
+
+  transition: all 0.25s ease;
+}
+
+.standing-card:hover {
+  transform: translateX(6px);
+  background: rgba(255,255,255,0.08);
+}
+
+/* TOP 3 SPECIAL STYLES */
+
+/* GOLD - 1st */
+.standing-card.gold {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 215, 0, 0.08));
+  border: 1px solid rgba(255, 215, 0, 0.4);
+}
+
+.standing-card.gold .rank {
+  color: #ffd700;
+  font-weight: 700;
+}
+
+/* SILVER - 2nd */
+.standing-card.silver {
+  background: linear-gradient(135deg, rgba(192, 192, 192, 0.25), rgba(192, 192, 192, 0.08));
+  border: 1px solid rgba(192, 192, 192, 0.35);
+}
+
+.standing-card.silver .rank {
+  color: #c0c0c0;
+  font-weight: 700;
+}
+
+/* BRONZE - 3rd */
+.standing-card.bronze {
+  background: linear-gradient(135deg, rgba(205, 127, 50, 0.25), rgba(205, 127, 50, 0.08));
+  border: 1px solid rgba(205, 127, 50, 0.35);
+}
+
+.standing-card.bronze .rank {
+  color: #cd7f32;
+  font-weight: 700;
+}
+
+.standing-card.gold:hover {
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.25);
+}
+
+.standing-card.silver:hover {
+  box-shadow: 0 0 18px rgba(192, 192, 192, 0.25);
+}
+
+.standing-card.bronze:hover {
+  box-shadow: 0 0 18px rgba(205, 127, 50, 0.25);
+}
+
+/* LEFT SIDE */
+.left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rank {
+  font-size: 1.2rem;
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+.driver-name {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* RIGHT SIDE */
+.right {
+  text-align: right;
+}
+
+.points {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.pts-label {
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
+
+/* TOP 3 VISUAL POWER */
+.pos-1 {
+  border-left: 4px solid gold;
+  box-shadow: 0 0 12px rgba(255,215,0,0.4);
+}
+
+.pos-2 {
+  border-left: 4px solid silver;
+}
+
+.pos-3 {
+  border-left: 4px solid #cd7f32;
+}
+
+.delta {
+  margin-left: 8px;
+  font-weight: 700;
+}
+
+.delta.up {
+  color: #00e676;
+}
+
+.delta.down {
+  color: #ff5252;
+}
+
+/* 🧠 BATTLE PANEL */
+.battle-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  max-width: 600px;
+}
+
+.battle-gap {
+  font-size: 1.1rem;
+}
+
+.battle-label {
+  opacity: 0.6;
+  margin-right: 8px;
+}
+
+.battle-value {
+  font-weight: 700;
+}
+
+/* 🔥 PRESSURE */
+.pressure-indicator {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.pressure-indicator.low {
+  background: rgba(0,255,150,0.1);
+  color: #00e676;
+}
+
+.pressure-indicator.medium {
+  background: rgba(255,200,0,0.1);
+  color: #ffd600;
+}
+
+.pressure-indicator.high {
+  background: rgba(255,0,60,0.15);
+  color: #ff1744;
+}
+
+.gap-chart-wrapper {
+  max-width: 600px;
+  padding: 16px 20px;
+  border-radius: 14px;
+
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+
+  backdrop-filter: blur(12px);
+}
+
+.gap-title {
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+  opacity: 0.7;
+}
+
+/* 🎬 FADE IN */
+.content {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.8s ease;
+}
+.content.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 🏁 STAGGER CARDS */
+.standing-card {
+  opacity: 0;
+  transform: translateX(-10px);
+  animation: slideIn 0.6s forwards;
+}
+
+@keyframes slideIn {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 📈 DRAW LINES */
+.chart-line-animated path {
+  stroke-dasharray: 1500;
+  stroke-dashoffset: 1500;
+  animation: drawLine 1.5s ease forwards;
+}
+
+
+.battle-panel,
+.standings-panel,
+.gap-chart-wrapper,
+.chart-wrapper {
+  opacity: 0;
+  transform: translateY(15px);
+  transition: all 0.6s ease;
+}
+
+.battle-panel.show,
+.standings-panel.show,
+.gap-chart-wrapper.show,
+.chart-wrapper.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.chart-line-animated path {
+  animation-delay: 1.8s;
+}
+
+
+/* ================= F1 LIVE PANEL ================= */
+
+.probability-panel {
+  margin-top: 24px;
+  padding: 18px;
+  border-radius: 16px;
+
+  background: radial-gradient(circle at top, #0a0a0a, #050505);
+  border: 1px solid rgba(255,255,255,0.08);
+
+  box-shadow: 0 0 40px rgba(255,0,0,0.15);
+}
+
+/* TITLE */
+
+.probability-title {
+  font-size: 14px;
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+  color: #fff;
+  position: relative;
+}
+
+.probability-title::after {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 2px;
+  background: #ff1744;
+  margin-top: 6px;
+}
+
+/* ROW */
+
+.probability-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+
+  opacity: 0;
+  transform: translateX(-30px);
+  animation: slideIn 0.5s forwards;
+}
+
+@keyframes slideIn {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* LEFT */
+
+.prob-left {
+  display: flex;
+  gap: 10px;
+}
+
+.prob-rank {
+  font-weight: bold;
+  color: #888;
+}
+
+.prob-driver {
+  font-size: 13px;
+}
+
+/* BAR */
+
+.prob-bar-container {
+  flex: 1;
+  height: 12px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.prob-bar {
+  height: 100%;
+  border-radius: 20px;
+  position: relative;
+
+  background: linear-gradient(
+    90deg,
+    #ff1744,
+    #ff9100,
+    #ffd600,
+    #00e676
+  );
+
+  transition: width 1.2s ease;
+}
+
+/* FLOW ANIMATION */
+
+.flow {
+  position: absolute;
+  width: 200%;
+  height: 100%;
+
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,0.4),
+    transparent
+  );
+
+  animation: flowMove 2s linear infinite;
+}
+
+@keyframes flowMove {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* RIGHT */
+
+.prob-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  width: 70px;
+}
+
+.prob-value {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* MOMENTUM */
+
+.momentum {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.momentum.up {
+  color: #00e676;
+  animation: pulseGreen 1s infinite alternate;
+}
+
+.momentum.down {
+  color: #ff1744;
+  animation: pulseRed 1s infinite alternate;
+}
+
+@keyframes pulseGreen {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+@keyframes pulseRed {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+/* TOP 3 GLOW */
+
+.probability-row.p1 .prob-bar {
+  box-shadow: 0 0 20px rgba(255,215,0,0.6);
+}
+
+.probability-row.p2 .prob-bar {
+  box-shadow: 0 0 16px rgba(192,192,192,0.6);
+}
+
+.probability-row.p3 .prob-bar {
+  box-shadow: 0 0 16px rgba(205,127,50,0.6);
+}
+
+/* MOMENTUM LEGEND */
+
+.momentum-legend {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* COLORS MATCH YOUR UI */
+
+.legend-item.up {
+  color: #00e676;
+}
+
+.legend-item.down {
+  color: #ff1744;
+}
+
+/* subtle glow like F1 overlays */
+
+.legend-item.up::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: #00e676;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #00e676;
+}
+
+.legend-item.down::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: #ff1744;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #ff1744;
+}

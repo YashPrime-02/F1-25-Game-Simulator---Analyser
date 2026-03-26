@@ -1,0 +1,144 @@
+.teammate-page {
+  padding: 30px;
+
+  color: white;
+
+  background:
+    radial-gradient(circle at top, #111, #050505),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0.02) 0px,
+      rgba(255,255,255,0.02) 1px,
+      transparent 1px,
+      transparent 40px
+    );
+
+  min-height: 100vh;
+}
+
+.teammate-page h2 {
+  font-family: "Orbitron", sans-serif;
+
+  margin-bottom: 25px;
+
+  letter-spacing: 1px;
+
+  color: #e10600;
+
+  text-shadow: 0 0 12px rgba(225, 6, 0, 0.7);
+}
+
+.team-card {
+  position: relative;
+
+  padding: 18px;
+
+  margin-bottom: 18px;
+
+  border-radius: 14px;
+
+  background: linear-gradient(180deg, #1a1a1a, #0a0a0a);
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  overflow: hidden;
+
+  transition: all 0.35s ease;
+
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.6);
+}
+
+.team-card::before {
+  content: "";
+
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  height: 100%;
+  width: 4px;
+
+  background: linear-gradient(180deg, #e10600, #ff3c3c);
+
+  box-shadow: 0 0 12px rgba(225, 6, 0, 0.7);
+}
+
+.team-card:hover {
+  transform: translateY(-6px) scale(1.01);
+
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.8),
+    0 0 15px rgba(225, 6, 0, 0.3);
+}
+
+.team-card h3 {
+  font-family: "Orbitron", sans-serif;
+
+  margin-bottom: 10px;
+
+  color: #fff;
+
+  letter-spacing: 0.5px;
+}
+
+.team-card p {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  margin: 6px 0;
+
+  font-size: 16px;
+
+  color: #ccc;
+}
+
+.driver-points {
+  font-weight: bold;
+
+  color: #9aff02;
+
+  text-shadow: 0 0 8px rgba(154, 255, 2, 0.6);
+}
+
+.delta {
+  display: block;
+
+  margin-top: 10px;
+
+  font-size: 18px;
+
+  font-weight: bold;
+
+  text-align: right;
+
+  color: #e10600;
+
+  text-shadow:
+    0 0 10px rgba(225, 6, 0, 0.8),
+    0 0 20px rgba(225, 6, 0, 0.4);
+}
+
+.team-card.redbull::before {
+  background: #0600ef;
+  box-shadow: 0 0 12px #0600ef;
+}
+
+.team-card.ferrari::before {
+  background: #e10600;
+}
+
+.team-card.mercedes::before {
+  background: #00d2be;
+}
+
+.team-card.mclaren::before {
+  background: #ff8700;
+}
+
+.team-card.astonmartin::before {
+  background: #006f62;
+}

@@ -24,6 +24,7 @@ const {
 const {
   buildChampionshipSummary,
 } = require("../services/championshipSummaryService");
+const { generateRaceNews } = require("../services/newsService");
 const {
   getSeasonPhase,
   getTitlePressure,
@@ -141,7 +142,7 @@ exports.createRaceWeekend = async (req, res) => {
     raceWeekend = await RaceWeekend.create({
       seasonId,
       roundNumber: nextRound,
-      weather: weather || "Dry",
+      weather: (weather || "dry").toLowerCase(),
       safetyCar: safetyCar || false,
       redFlag: redFlag || false,
       notes,
@@ -176,33 +177,72 @@ exports.submitRaceResults = async (req, res) => {
     });
   }
 
-  const positions = results.map((r) => r.position);
+  /* ===============================
+     ✅ POSITION VALIDATION (FIXED FOR DNF)
+  =============================== */
 
-  if (positions.includes(null) || positions.includes(undefined)) {
+  const finishers = results.filter((r) => !r.dnf);
+  const dnfs = results.filter((r) => r.dnf);
+
+  const finisherPositions = finishers.map((r) => r.position);
+
+  if (
+    finisherPositions.some(
+      (p) => p === null || p === undefined || p < 1 || p > 20,
+    )
+  ) {
     return res.status(400).json({
-      message: "All drivers must have a position",
+      message: "All finishing drivers must have valid positions (1-20)",
     });
   }
 
-  if (positions.some((p) => p < 1 || p > 20)) {
+  const uniquePositions = new Set(finisherPositions);
+
+  if (uniquePositions.size !== finisherPositions.length) {
     return res.status(400).json({
-      message: "Positions must be between 1 and 20",
+      message: "Duplicate positions detected among finishers",
     });
   }
 
-  const uniquePositions = new Set(positions);
+  const invalidDNFPosition = dnfs.some((r) => r.position !== null);
 
-  if (uniquePositions.size !== 20) {
+  if (invalidDNFPosition) {
     return res.status(400).json({
-      message: "Duplicate positions detected",
+      message: "DNF drivers must not have position",
     });
   }
+
+  /* ===============================
+     ✅ FASTEST LAP VALIDATION
+  =============================== */
 
   const fastestLapCount = results.filter((r) => r.fastestLap).length;
 
   if (fastestLapCount !== 1) {
     return res.status(400).json({
       message: "Exactly one fastest lap required",
+    });
+  }
+
+  const invalidFL = results.some((r) => r.dnf && r.fastestLap);
+
+  if (invalidFL) {
+    return res.status(400).json({
+      message: "DNF driver cannot have fastest lap",
+    });
+  }
+
+  /* ===============================
+     ✅ DNF VALIDATION
+  =============================== */
+
+  const invalidDNF = results.some(
+    (r) => r.dnf && (!r.incident || r.incident === "none"),
+  );
+
+  if (invalidDNF) {
+    return res.status(400).json({
+      message: "DNF must include incident",
     });
   }
 
@@ -221,21 +261,13 @@ exports.submitRaceResults = async (req, res) => {
     }
 
     /* ===============================
-       PREVENT RESUBMISSION
+       🔥 ALLOW RE-RUN (REPLACE RESULTS)
     =============================== */
 
-    const existingResults = await RaceResult.findOne({
+    await RaceResult.destroy({
       where: { raceWeekendId },
       transaction,
     });
-
-    if (existingResults) {
-      await transaction.rollback();
-
-      return res.status(400).json({
-        message: "Results for this round already submitted",
-      });
-    }
 
     /* ===============================
        INSERT RESULTS
@@ -244,9 +276,10 @@ exports.submitRaceResults = async (req, res) => {
     const formattedResults = results.map((r) => ({
       raceWeekendId,
       driverId: r.driverId,
-      position: r.position,
+      position: r.dnf ? null : r.position,
       fastestLap: !!r.fastestLap,
       dnf: !!r.dnf,
+      incident: r.dnf ? r.incident || "unknown" : null,
     }));
 
     await RaceResult.bulkCreate(formattedResults, { transaction });
@@ -262,7 +295,7 @@ exports.submitRaceResults = async (req, res) => {
     });
 
     /* ===============================
-       GENERATE COMMENTARY (SAFE)
+         COMMENTARY
     =============================== */
 
     const standings = await calculateDriverStandings(raceWeekend.seasonId);
@@ -295,16 +328,33 @@ exports.submitRaceResults = async (req, res) => {
           season.raceCount,
         );
 
-        await generateRaceCommentary({
-          season,
-          race: raceWeekend,
-          winnerName,
-          leaderName,
-          gap,
-          seasonPhase,
-          playerDriverName: null,
-          playerPosition: null,
-        });
+        /* ===============================
+   ✅ BUILD INCIDENTS CONTEXT
+=============================== */
+
+        const incidents = results
+          .filter((r) => r.dnf)
+          .map((r) => r.incident || "unknown");
+
+        /* ===============================
+   GENERATE COMMENTARY (SAFE)
+=============================== */
+
+        try {
+          await generateRaceCommentary({
+            season,
+            race: raceWeekend,
+            winnerName,
+            leaderName,
+            gap,
+            seasonPhase,
+            playerDriverName: null,
+            playerPosition: null,
+            incidents, // ✅ FIX
+          });
+        } catch (err) {
+          console.error("Commentary failed (non-blocking):", err);
+        }
       }
     }
 
@@ -314,7 +364,6 @@ exports.submitRaceResults = async (req, res) => {
 
     const completedRoundsRaw = await RaceResult.findAll({
       attributes: ["raceWeekendId"],
-
       include: [
         {
           model: RaceWeekend,
@@ -322,7 +371,6 @@ exports.submitRaceResults = async (req, res) => {
           attributes: ["roundNumber"],
         },
       ],
-
       group: ["raceWeekendId", "RaceWeekend.id"],
       transaction,
     });
@@ -330,6 +378,14 @@ exports.submitRaceResults = async (req, res) => {
     if (completedRoundsRaw.length >= season.raceCount) {
       await season.update({ status: "completed" }, { transaction });
     }
+    
+   
+
+try {
+  await generateRaceNews(season.id);
+} catch (err) {
+  console.error("News generation failed:", err);
+}
 
     await transaction.commit();
 
@@ -383,9 +439,11 @@ exports.getDriverStandings = async (req, res) => {
     results.forEach((r) => {
       const driver = r.Driver;
 
-      let points = POINTS_MAP[r.position] || 0;
+      let points = r.dnf ? 0 : POINTS_MAP[r.position] || 0;
 
-      if (r.fastestLap && r.position <= 10) points += 1;
+      if (!r.dnf && r.fastestLap && r.position <= 10) {
+        points += 1;
+      }
 
       if (!standings[driver.id]) {
         standings[driver.id] = {
@@ -447,9 +505,11 @@ exports.getSeasonProgression = async (req, res) => {
       const driver = driverMap[r.driverId];
       if (!driver) return;
 
-      let points = POINTS_MAP[r.position] || 0;
-      if (r.fastestLap && r.position <= 10) points += 1;
+      let points = r.dnf ? 0 : POINTS_MAP[r.position] || 0;
 
+      if (!r.dnf && r.fastestLap && r.position <= 10) {
+        points += 1;
+      }
       if (!cumulative[r.driverId]) cumulative[r.driverId] = 0;
       cumulative[r.driverId] += points;
     });
@@ -483,6 +543,7 @@ const generateRaceCommentary = async ({
   seasonPhase,
   playerDriverName,
   playerPosition,
+  incidents = [],
 }) => {
   const commentators = [
     {
@@ -514,14 +575,14 @@ Points Gap: ${gap}
 
 Player Driver: ${playerDriverName}
 Player Finish Position: ${playerPosition}
-
+Incidents: ${incidents && incidents.length > 0 ? incidents.join(", ") : "None"}
 Guidelines:
 Mention the race winner, championship battle, OR the player driver if their result was notable.
 If the player finished inside the top 10 or had an interesting race, highlight them.
 Keep it realistic like Sky Sports commentary.
 
 Write ONE short broadcast line.
-Under 40 words. No line breaks.
+Under 60 words. No line breaks.
 `;
 
     let text = await generateAIText(prompt);
@@ -543,7 +604,6 @@ Under 40 words. No line breaks.
 ========================================================= */
 exports.getRaceRecapAI = async (req, res) => {
   try {
-
     const { raceWeekendId } = req.params;
 
     const race = await RaceWeekend.findByPk(raceWeekendId);
@@ -553,9 +613,7 @@ exports.getRaceRecapAI = async (req, res) => {
 
     const season = await Season.findByPk(race.seasonId);
 
-    if (!season)
-      return res.status(404).json({ message: "Season not found" });
-
+    if (!season) return res.status(404).json({ message: "Season not found" });
 
     /* =====================================================
        1️⃣ CHECK IF RECAP ALREADY EXISTS (CACHE)
@@ -569,7 +627,6 @@ exports.getRaceRecapAI = async (req, res) => {
     });
 
     if (existingMemory) {
-
       const standings = await calculateDriverStandings(season.id);
 
       const leader = standings?.[0];
@@ -596,7 +653,6 @@ exports.getRaceRecapAI = async (req, res) => {
       });
     }
 
-
     /* =====================================================
        2️⃣ LOAD RESULTS
     ===================================================== */
@@ -608,7 +664,6 @@ exports.getRaceRecapAI = async (req, res) => {
     });
 
     if (!results || results.length === 0) {
-
       return res.json({
         raceWeekendId,
         narrative: null,
@@ -618,9 +673,7 @@ exports.getRaceRecapAI = async (req, res) => {
           titleClinched: false,
         },
       });
-
     }
-
 
     /* =====================================================
        3️⃣ BUILD CONTEXT
@@ -636,17 +689,11 @@ exports.getRaceRecapAI = async (req, res) => {
 
     const gap = p2 ? leader.totalPoints - p2.totalPoints : 0;
 
-    const seasonPhase = getSeasonPhase(
-      race.roundNumber,
-      season.raceCount
-    );
+    const seasonPhase = getSeasonPhase(race.roundNumber, season.raceCount);
 
     const rivalry = detectRivalry(standings);
 
-    const titleStatus = await detectTitleClinch(
-      season,
-      race.roundNumber
-    );
+    const titleStatus = await detectTitleClinch(season, race.roundNumber);
 
     const controversy = detectControversy(results);
 
@@ -655,9 +702,8 @@ exports.getRaceRecapAI = async (req, res) => {
     const transferRumors = generateTransferRumorContext(
       standings,
       race.roundNumber,
-      season.raceCount
+      season.raceCount,
     );
-
 
     /* =====================================================
        4️⃣ WINNER + PODIUM
@@ -668,17 +714,13 @@ exports.getRaceRecapAI = async (req, res) => {
     if (!winner || !winner.Driver)
       return res.status(400).json({ message: "Winner missing" });
 
-    const winnerName =
-      winner.Driver.firstName + " " + winner.Driver.lastName;
+    const winnerName = winner.Driver.firstName + " " + winner.Driver.lastName;
 
     const winnerTeam = winner.Driver.Team?.name || "Unknown";
 
     const podium = results
       .filter((r) => r.position <= 3)
-      .map(
-        (r) =>
-          `${r.Driver.firstName} ${r.Driver.lastName}`
-      );
+      .map((r) => `${r.Driver.firstName} ${r.Driver.lastName}`);
 
     const fastestLap = results.find((r) => r.fastestLap);
 
@@ -688,6 +730,9 @@ exports.getRaceRecapAI = async (req, res) => {
 
     const dnfCount = results.filter((r) => r.dnf).length;
 
+    const incidents = results
+      .filter((r) => r.dnf && r.incident)
+      .map((r) => `${r.Driver.firstName} ${r.Driver.lastName} (${r.incident})`);
 
     /* =====================================================
        5️⃣ LEADER NAME
@@ -698,7 +743,6 @@ exports.getRaceRecapAI = async (req, res) => {
     const leaderName = leaderDriver
       ? `${leaderDriver.firstName} ${leaderDriver.lastName}`
       : "Unknown";
-
 
     /* =====================================================
        6️⃣ PLAYER DRIVER CONTEXT
@@ -716,7 +760,6 @@ exports.getRaceRecapAI = async (req, res) => {
         ? `${playerCareer.Driver.firstName} ${playerCareer.Driver.lastName}`
         : "None";
 
-
     /* =====================================================
        7️⃣ AI PROMPT
     ===================================================== */
@@ -725,7 +768,7 @@ exports.getRaceRecapAI = async (req, res) => {
 You are a professional Formula 1 commentator.
 
 Write a dramatic race recap.
-Under 200 words.
+Under 250 words.
 No line breaks.
 
 Season Phase: ${seasonPhase}
@@ -741,10 +784,9 @@ Rivalry: ${rivalry?.message || "None"}
 Controversy: ${controversy?.message || "None"}
 Political Tension: ${politicalTension?.message || "None"}
 Transfer Rumors: ${transferRumors?.message || "None"}
-
+Incidents: ${incidents.join(", ") || "None"}
 Player Driver: ${playerContext}
 `;
-
 
     /* =====================================================
        8️⃣ GENERATE AI
@@ -753,9 +795,7 @@ Player Driver: ${playerContext}
     let narrative = await generateAIText(prompt);
 
     narrative =
-      narrative?.replace(/\n/g, " ").trim() ||
-      "Race recap unavailable.";
-
+      narrative?.replace(/\n/g, " ").trim() || "Race recap unavailable.";
 
     /* =====================================================
        9️⃣ SAVE MEMORY (ONLY ONCE)
@@ -766,7 +806,6 @@ Player Driver: ${playerContext}
       roundNumber: race.roundNumber,
       summary: narrative,
     });
-
 
     /* =====================================================
        10️⃣ RESPONSE
@@ -781,16 +820,13 @@ Player Driver: ${playerContext}
         titleClinched: titleStatus?.clinched || false,
       },
     });
-
   } catch (err) {
-
     console.error("AI RECAP ERROR:", err);
 
     return res.status(500).json({
       message: "AI recap failed",
       error: err.message,
     });
-
   }
 };
 
@@ -831,9 +867,11 @@ exports.getConstructorStandings = async (req, res) => {
       };
     }
 
-    let points = POINTS_MAP[r.position] || 0;
-    if (r.fastestLap && r.position <= 10) points += 1;
+    let points = r.dnf ? 0 : POINTS_MAP[r.position] || 0;
 
+    if (!r.dnf && r.fastestLap && r.position <= 10) {
+      points += 1;
+    }
     constructorTable[teamId].totalPoints += points;
 
     if (r.position === 1) constructorTable[teamId].wins += 1;
@@ -1262,7 +1300,12 @@ exports.getSeasonNews = async (req, res) => {
       order: [["roundNumber", "DESC"]],
     });
 
-    res.json(news);
+    const formatted = news.map((n) => ({
+      type: "UPDATE",
+      text: `${n.headline}: ${n.content}`,
+    }));
+
+    res.json(formatted);
   } catch (err) {
     console.error("getSeasonNews error:", err);
     res.status(500).json({ message: "Failed to fetch news" });

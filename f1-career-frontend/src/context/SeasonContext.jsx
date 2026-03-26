@@ -11,39 +11,29 @@ export function SeasonProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [latestRaceId, setLatestRaceId] = useState(null);
 
+  // ✅ NEW: refresh trigger
+  const [refresh, setRefresh] = useState(0);
+
+  const triggerRefresh = () => {
+    setRefresh(prev => prev + 1);
+  };
+
   const loadSeason = async () => {
 
     try {
 
       setLoading(true);
 
-      /* ===============================
-         LOAD ALL SEASONS
-      =============================== */
-
       const allSeasons = await fetchAllSeasons();
-
       let seasonsList = allSeasons || [];
-
-      /* ===============================
-         FETCH ACTIVE SEASON
-      =============================== */
 
       let activeSeason = null;
 
       try {
-
         activeSeason = await fetchActiveSeason();
-
       } catch (err) {
-
         console.warn("Active season fetch failed:", err);
-
       }
-
-      /* ===============================
-         DETERMINE SELECTED SEASON
-      =============================== */
 
       let selectedSeason = null;
 
@@ -51,7 +41,6 @@ export function SeasonProvider({ children }) {
 
         selectedSeason = activeSeason;
 
-        // ensure active season exists in dropdown list
         const exists = seasonsList.find(s => s.id === activeSeason.id);
 
         if (!exists) {
@@ -60,22 +49,12 @@ export function SeasonProvider({ children }) {
 
       }
 
-      /* ===============================
-         FALLBACK → LATEST SEASON
-      =============================== */
-
       if (!selectedSeason && seasonsList.length > 0) {
-
         selectedSeason = seasonsList[seasonsList.length - 1];
-
       }
 
       setSeasons(seasonsList);
       setSeason(selectedSeason);
-
-      /* ===============================
-         FETCH LATEST RACE
-      =============================== */
 
       if (selectedSeason?.id) {
 
@@ -90,9 +69,7 @@ export function SeasonProvider({ children }) {
           }
 
         } catch {
-
           setLatestRaceId(null);
-
         }
 
       }
@@ -100,7 +77,6 @@ export function SeasonProvider({ children }) {
     } catch (err) {
 
       console.error("Season loading failed:", err);
-
       setSeason(null);
       setSeasons([]);
 
@@ -113,9 +89,7 @@ export function SeasonProvider({ children }) {
   };
 
   useEffect(() => {
-
     loadSeason();
-
   }, []);
 
   return (
@@ -128,7 +102,11 @@ export function SeasonProvider({ children }) {
         latestRaceId,
         setLatestRaceId,
         setSeason,
-        reloadSeason: loadSeason
+        reloadSeason: loadSeason,
+
+        // ✅ NEW EXPORTS
+        refresh,
+        triggerRefresh
       }}
     >
 

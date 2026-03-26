@@ -1,7 +1,7 @@
 import { useEffect,useState } from "react";
 import api from "../../services/api";
 import { useSeason } from "../../context/SeasonContext";
-import "./Combined.css";
+import "./TeammateDelta.css";
 import useBackgroundAudio from "../../hooks/useBackgroundAudio";
 import f1Music from "../../assets/F1_theme.mp3";
 export default function TeammateDelta(){

@@ -31,6 +31,15 @@ export default function PlayerCareerSetup() {
   });
 
   const [loading, setLoading] = useState(false);
+
+  /* ===== WARNING MODAL ===== */
+
+  const [showWarning, setShowWarning] = useState(true);
+  const [warningTimer, setWarningTimer] = useState(10);
+
+  console.log("Warning modal state:", showWarning);
+  console.log("Warning timer:", warningTimer);
+
   /* ===============================
      🎵 BACKGROUND AUDIO
   =============================== */
@@ -39,6 +48,26 @@ export default function PlayerCareerSetup() {
     volume: 0.35,
     loop: true,
   });
+
+  /* ===============================
+     WARNING TIMER
+  =============================== */
+
+  useEffect(() => {
+    if (!showWarning) return;
+
+    if (warningTimer === 0) {
+      console.log("Auto closing warning modal");
+      setShowWarning(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setWarningTimer((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [warningTimer, showWarning]);
 
   /* ===============================
      LOAD TEAMS
@@ -50,6 +79,9 @@ export default function PlayerCareerSetup() {
     const loadTeams = async () => {
       try {
         const data = await getTeams();
+
+        console.log("Teams loaded:", data);
+
         if (mounted) setTeams(data);
       } catch (err) {
         console.error("Teams load failed", err);
@@ -75,6 +107,9 @@ export default function PlayerCareerSetup() {
     const loadDrivers = async () => {
       try {
         const data = await getDriversByTeam(selectedTeam.id);
+
+        console.log("Drivers loaded:", data);
+
         if (mounted) setDrivers(data);
       } catch (err) {
         console.error("Drivers load failed", err);
@@ -92,7 +127,6 @@ export default function PlayerCareerSetup() {
   const changeMode = (newMode) => {
     setMode(newMode);
 
-    // reset dependent selections
     setSelectedDriver(null);
     setReplacedDriver(null);
   };
@@ -102,6 +136,8 @@ export default function PlayerCareerSetup() {
   =============================== */
 
   const selectTeam = (team) => {
+    console.log("Team selected:", team);
+
     setSelectedTeam(team);
     setSelectedDriver(null);
     setReplacedDriver(null);
@@ -125,6 +161,8 @@ export default function PlayerCareerSetup() {
     try {
       setLoading(true);
 
+      console.log("Creating career...");
+
       await createPlayerCareer({
         careerName,
         driverId: mode === "existing" ? selectedDriver.id : null,
@@ -134,7 +172,10 @@ export default function PlayerCareerSetup() {
         customDriver: mode === "custom" ? customDriver : null,
       });
 
+      console.log("Career created");
+
       navigate("/dashboard");
+
     } catch (err) {
       alert(err.response?.data?.message || "Failed");
     } finally {
@@ -148,6 +189,49 @@ export default function PlayerCareerSetup() {
 
   return (
     <div className="career-container">
+
+      {/* ===== WARNING MODAL ===== */}
+
+      {showWarning && (
+        <div className="career-warning-overlay">
+
+          <div className="career-warning-modal">
+
+            <button
+              className="warning-close"
+              onClick={() => {
+                console.log("Modal manually closed");
+                setShowWarning(false);
+              }}
+            >
+              ✕
+            </button>
+
+            <h2 className="warning-title">
+              RACE CONTROL NOTICE
+            </h2>
+
+            <p>
+              If a player driver already exists in this career,
+              creating another player may replace the existing
+              driver or result in two player drivers
+              in the same championship.
+            </p>
+
+            <p className="warning-note">
+              Please proceed carefully when managing
+              player driver slots.
+            </p>
+
+            <div className="warning-timer">
+              Auto closing in <span>{warningTimer}s</span>
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
       <GlassCard>
         <h2>Start Player Career</h2>
 
@@ -260,7 +344,6 @@ export default function PlayerCareerSetup() {
             />
           </GlassCard>
 
-          {/* REPLACEMENT ONLY FOR CUSTOM */}
           {selectedTeam && drivers.length > 0 && (
             <GlassCard>
               <h3>Select Driver To Replace</h3>
@@ -292,6 +375,7 @@ export default function PlayerCareerSetup() {
           {loading ? "Creating Career..." : "Start Career"}
         </button>
       </GlassCard>
+
     </div>
   );
 }

@@ -55,7 +55,8 @@ function Sidebar() {
         <NavLink to="/standings/constructors">Constructors</NavLink>
         <NavLink to="/season-summary">Season Summary</NavLink>
         <NavLink to="/standings/teammates">Teammate Battle</NavLink>
-        {/* <NavLink to="/dashboard/race-control">Race Center</NavLink> */}
+        {/* <NavLink to="/dashboard/race-control">Race Center</NavLink> */} 
+        <NavLink to="/player-career/setup">Create Custom Player </NavLink>
         <NavLink to="/drivers">Drivers</NavLink>
         <NavLink to="/Commentary">Commentary</NavLink>
         <NavLink to="/dashboard/championship">Championship</NavLink>

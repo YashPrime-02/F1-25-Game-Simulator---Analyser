@@ -10,32 +10,60 @@ export default function SeasonSummary() {
 
   const [progress, setProgress] = useState(null);
   const [displayPercent, setDisplayPercent] = useState(0);
-  const F1_CALENDAR = [
-    "Melbourne",
-    "Shanghai",
-    "Suzuka",
-    "Bahrain",
-    "Jeddah",
-    "Miami",
-    "Imola",
-    "Monaco",
-    "Montreal",
-    "Barcelona",
-    "Austria",
-    "Silverstone",
-    "Hungary",
-    "Spa",
-    "Zandvoort",
-    "Monza",
-    "Baku",
-    "Singapore",
-    "Austin",
-    "Mexico City",
-    "Brazil",
-    "Las Vegas",
-    "Qatar",
-    "Abu Dhabi",
-  ];
+   const F1_CALENDAR = [
+     "Melbourne",
+     "Shanghai",
+     "Suzuka",
+     "Bahrain",
+     "Jeddah",
+     "Miami",
+     "Imola",
+     "Monaco",
+     "Barcelona",
+     "Montreal",
+     "Austria",
+     "Silverstone",
+     "Spa",
+     "Hungary",
+     "Zandvoort",
+     "Monza",
+     "Baku",
+     "Singapore",
+     "Texas",
+     "Mexico City",
+     "Brazil",
+     "Las Vegas",
+     "Qatar",
+     "Abu Dhabi",
+   ];
+
+   const F1_FLAGS = {
+     Melbourne: "au",
+     Shanghai: "cn",
+     Suzuka: "jp",
+     Bahrain: "bh",
+     Jeddah: "sa",
+     Miami: "us",
+     Imola: "it",
+     Monaco: "mc",
+     Barcelona: "es",
+     Montreal: "ca",
+     Austria: "at",
+     Silverstone: "gb",
+     Hungary: "hu",
+     Spa: "be",
+     Zandvoort: "nl",
+     Monza: "it",
+     Baku: "az",
+     Singapore: "sg",
+     Austin: "us",
+     "Mexico City": "mx",
+     Brazil: "br",
+     "Las Vegas": "us",
+     Qatar: "qa",
+     "Abu Dhabi": "ae",
+   };
+  
   const totalRaces = F1_CALENDAR.length;
     /* ===============================
        🎵 BACKGROUND AUDIO
@@ -129,11 +157,21 @@ export default function SeasonSummary() {
                 title={venue}
               />
 
-              {finished && <span className="race-label">{venue}</span>}
+              {finished && (
+                <span className="race-label">
+                  <img
+                    src={`https://flagcdn.com/w20/${F1_FLAGS[venue]}.png`}
+                    alt={venue}
+                    className="flag"
+                  />
+                  {venue}
+                </span>
+              )}
             </div>
           );
         })}
       </div>
+
       {/* ======================
          LOCKED SECTION
       ====================== */}
