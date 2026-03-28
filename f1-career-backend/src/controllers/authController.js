@@ -33,16 +33,43 @@ exports.signup = async (req, res) => {
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ message: 'email and password required' });
+
+  console.log("🔐 LOGIN ATTEMPT");
+  console.log("📧 Email entered:", email);
+  console.log("🔑 Password entered:", password);
+
+  if (!email || !password) {
+    console.log("❌ Missing email or password");
+    return res.status(400).json({ message: 'email and password required' });
+  }
 
   const user = await User.findOne({ where: { email } });
-  if (!user) return res.status(401).json({ message: 'invalid credentials' });
+
+  if (!user) {
+    console.log("❌ User not found for email:", email);
+    return res.status(401).json({ message: 'invalid credentials' });
+  }
+
+  console.log("✅ User found:", user.email);
+  console.log("🗄️ Hash from DB:", user.passwordHash);
 
   const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) return res.status(401).json({ message: 'invalid credentials' });
+
+  console.log("🔍 Password match result:", ok);
+
+  if (!ok) {
+    console.log("❌ Password mismatch");
+    return res.status(401).json({ message: 'invalid credentials' });
+  }
+
+  console.log("✅ LOGIN SUCCESS");
 
   const token = signToken(user);
-  res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+
+  res.json({
+    token,
+    user: { id: user.id, email: user.email, name: user.name }
+  });
 };
 
 exports.me = async (req, res) => {
