@@ -56,7 +56,7 @@ export default function SeasonSummary() {
      Monza: "it",
      Baku: "az",
      Singapore: "sg",
-     Austin: "us",
+     Texas: "us",
      "Mexico City": "mx",
      Brazil: "br",
      "Las Vegas": "us",
@@ -75,14 +75,15 @@ export default function SeasonSummary() {
     });
   
     
-  useEffect(() => {
-    if (!season) return;
+useEffect(() => {
+  if (!season) return;
 
-    api
-      .get(`/seasons/progress/${season.id}`)
-      .then((res) => setProgress(res.data));
-  }, [season]);
-
+  api.get(`/seasons/progress/${season.id}`)
+    .then((res) => {
+      console.log("API RESPONSE:", res.data); // 👈 ADD THIS
+      setProgress(res.data);
+    });
+}, [season]);
   /* ======================
      Smooth Counter
   ====================== */
