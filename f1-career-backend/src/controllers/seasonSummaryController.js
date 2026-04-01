@@ -194,7 +194,7 @@ exports.getSeasonProgress = async (req, res) => {
 
       for (const r of results) {
 
-        const teamId = driverTeamMap[r.driverId];
+        const teamId = r.teamId || driverTeamMap[r.driverId];
         if (!teamId) continue;
 
         let points = F1_POINTS[r.position] || 0;

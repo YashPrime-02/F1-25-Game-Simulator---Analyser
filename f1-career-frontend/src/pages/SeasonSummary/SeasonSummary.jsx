@@ -7,7 +7,6 @@ import f1Music from "../../assets/F1_theme.mp3";
 
 export default function SeasonSummary() {
   const { season } = useSeason();
-
   const [progress, setProgress] = useState(null);
   const [displayPercent, setDisplayPercent] = useState(0);
    const F1_CALENDAR = [
@@ -116,10 +115,10 @@ useEffect(() => {
   /* ======================
      Completed Races
   ====================== */
-
   const completedRaces = Math.round((displayPercent / 100) * totalRaces);
 
   return (
+    <>
     <div className="season-summary">
       <h2>Season Progress</h2>
 
@@ -203,5 +202,6 @@ useEffect(() => {
         </div>
       )}
     </div>
+    </>
   );
 }

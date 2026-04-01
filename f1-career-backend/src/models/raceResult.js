@@ -2,7 +2,7 @@
 
 module.exports = (sequelize, DataTypes) => {
   const RaceResult = sequelize.define(
-    'RaceResult',
+    "RaceResult",
     {
       id: {
         type: DataTypes.INTEGER,
@@ -30,6 +30,11 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: false,
       },
 
+      teamId: {
+        type: DataTypes.INTEGER,
+        allowNull: true, // IMPORTANT (no breaking)
+      },
+
       // ✅ NEW FIELD
       incident: {
         type: DataTypes.STRING(50),
@@ -37,9 +42,9 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     {
-      tableName: 'race_results',
+      tableName: "race_results",
       timestamps: false,
-    }
+    },
   );
 
   return RaceResult;

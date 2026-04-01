@@ -270,22 +270,43 @@ exports.submitRaceResults = async (req, res) => {
     });
 
     /* ===============================
-       INSERT RESULTS
-    =============================== */
+   INSERT RESULTS (WITH TEAM SNAPSHOT)
+=============================== */
+
+    // 🔥 Fetch driver → team mapping ONCE
+    const drivers = await Driver.findAll({
+      where: {
+        id: results.map((r) => r.driverId),
+      },
+      attributes: ["id", "teamId"],
+      transaction,
+    });
+
+    const driverTeamMap = {};
+    drivers.forEach((d) => {
+      driverTeamMap[d.id] = d.teamId;
+    });
 
     const formattedResults = results.map((r) => ({
       raceWeekendId,
       driverId: r.driverId,
+
+      // ✅ SNAPSHOT TEAM HERE
+      teamId: driverTeamMap[r.driverId],
+
       position: r.dnf ? null : r.position,
       fastestLap: !!r.fastestLap,
       dnf: !!r.dnf,
       incident: r.dnf ? r.incident || "unknown" : null,
     }));
 
+    console.log("🧠 TEAM SNAPSHOT MAP:", driverTeamMap);
+    console.log(
+      "📦 INSERTING RESULTS WITH TEAM SNAPSHOT:",
+      formattedResults.slice(0, 3),
+    );
+
     await RaceResult.bulkCreate(formattedResults, { transaction });
-
-    await updateMoraleAfterRace(formattedResults, Driver);
-
     /* ===============================
        LOAD SEASON
     =============================== */
@@ -378,14 +399,12 @@ exports.submitRaceResults = async (req, res) => {
     if (completedRoundsRaw.length >= season.raceCount) {
       await season.update({ status: "completed" }, { transaction });
     }
-    
-   
 
-try {
-  await generateRaceNews(season.id);
-} catch (err) {
-  console.error("News generation failed:", err);
-}
+    try {
+      await generateRaceNews(season.id);
+    } catch (err) {
+      console.error("News generation failed:", err);
+    }
 
     await transaction.commit();
 
@@ -403,12 +422,17 @@ try {
     });
   }
 };
+
 /* =========================================================
    DRIVER STANDINGS
 ========================================================= */
 exports.getDriverStandings = async (req, res) => {
   try {
     const { seasonId } = req.params;
+
+    /* ===============================
+       LOAD RESULTS (NO TEAM JOIN)
+    =============================== */
 
     const results = await RaceResult.findAll({
       include: [
@@ -419,20 +443,38 @@ exports.getDriverStandings = async (req, res) => {
         },
         {
           model: Driver,
-          attributes: ["id", "firstName", "lastName", "teamId", "driverNumber"],
-          include: [
-            {
-              model: Team,
-              attributes: ["name"],
-            },
-          ],
+          attributes: ["id", "firstName", "lastName", "driverNumber"],
         },
+      ],
+      attributes: [
+        "driverId",
+        "teamId", // 🔥 IMPORTANT
+        "position",
+        "fastestLap",
+        "dnf",
       ],
     });
 
     if (!results.length) {
       return res.json([]);
     }
+
+    /* ===============================
+       LOAD TEAMS (MAP)
+    =============================== */
+
+    const teams = await Team.findAll();
+    const teamMap = {};
+
+    teams.forEach((t) => {
+      teamMap[t.id] = t.name;
+    });
+
+    console.log("🏎️ TEAM MAP:", teamMap);
+
+    /* ===============================
+       BUILD STANDINGS
+    =============================== */
 
     const standings = {};
 
@@ -445,11 +487,20 @@ exports.getDriverStandings = async (req, res) => {
         points += 1;
       }
 
+      // 🔥 USE SNAPSHOT TEAM
+      const teamName = teamMap[r.teamId] || "Unknown";
+
+      console.log("🔍 RESULT DEBUG:", {
+        driver: `${driver.firstName} ${driver.lastName}`,
+        teamId: r.teamId,
+        teamName,
+      });
+
       if (!standings[driver.id]) {
         standings[driver.id] = {
           driverId: driver.id,
           driverName: `${driver.firstName} ${driver.lastName}`,
-          teamName: driver.Team?.name || "Unknown",
+          teamName,
           driverNumber: driver.driverNumber,
           totalPoints: 0,
           wins: 0,
@@ -467,6 +518,8 @@ exports.getDriverStandings = async (req, res) => {
     const sorted = Object.values(standings).sort(
       (a, b) => b.totalPoints - a.totalPoints,
     );
+
+    console.log("🥇 FINAL STANDINGS:", sorted.slice(0, 5));
 
     res.json(sorted);
   } catch (err) {
@@ -765,12 +818,20 @@ exports.getRaceRecapAI = async (req, res) => {
     ===================================================== */
 
     const prompt = `
-You are a professional Formula 1 commentator.
+You are an elite Formula 1 commentator blending the intensity of Martin Brundle and the excitement of David Croft.
 
-Write a dramatic race recap.
-Under 250 words.
-No line breaks.
+Write a dramatic, high-stakes race recap as if narrating a pivotal moment in a championship season.
+Maximum 250 words. No line breaks. Fast-paced, cinematic tone.
 
+Focus heavily on the Player Driver as the central figure — their performance, pressure, decisions, and defining moments.
+
+Build the narrative around key race incidents, strategic battles, and turning points. Highlight overtakes, mistakes, controversies, and tension across the grid.
+
+Maintain a strong storytelling arc: explosive start → mid-race drama → decisive climax → championship implications.
+
+Use vivid motorsport language: wheel-to-wheel, on the limit, under pressure, stunning move, heartbreak, redemption.
+
+Context:
 Season Phase: ${seasonPhase}
 Winner: ${winnerName} (${winnerTeam})
 Podium: ${podium.join(", ")}
@@ -786,8 +847,9 @@ Political Tension: ${politicalTension?.message || "None"}
 Transfer Rumors: ${transferRumors?.message || "None"}
 Incidents: ${incidents.join(", ") || "None"}
 Player Driver: ${playerContext}
-`;
 
+Output should feel like live commentary meets Netflix Drive to Survive — dramatic, emotional, and decisive.
+`;
     /* =====================================================
        8️⃣ GENERATE AI
     ===================================================== */
@@ -855,7 +917,7 @@ exports.getConstructorStandings = async (req, res) => {
   const constructorTable = {};
 
   results.forEach((r) => {
-    const teamId = driverTeamMap[r.driverId];
+    const teamId = r.teamId || driverTeamMap[r.driverId];
     if (!teamId) return;
 
     if (!constructorTable[teamId]) {
@@ -1179,15 +1241,19 @@ exports.simulateRace = async (req, res) => {
     const generatedResults = shuffled.map((driver, index) => ({
       raceWeekendId: raceWeekend.id,
       driverId: driver.id,
+
+      // ✅ SNAPSHOT TEAM HERE
+      teamId: driver.teamId,
+
       position: index + 1,
       fastestLap: index === Math.floor(Math.random() * 10),
       dnf: false,
     }));
 
-    await RaceResult.bulkCreate(generatedResults, { transaction });
-
-    await updateMoraleAfterRace(generatedResults, Driver);
-
+    console.log("🏎️ SIMULATION TEAM SNAPSHOT:");
+    generatedResults.slice(0, 5).forEach((r) => {
+      console.log(`Driver ${r.driverId} → Team ${r.teamId}`);
+    });
     /* =========================================================
        FINALIZE SEASON
     ========================================================= */

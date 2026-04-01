@@ -8,10 +8,8 @@ const POINTS = {
 //==============================
 // CONSTRUCTOR STANDINGS
 //==============================
-
 exports.getConstructors = async (req,res) => {
-
-  try{
+  try {
 
     const { seasonId } = req.params;
 
@@ -21,44 +19,75 @@ exports.getConstructors = async (req,res) => {
 
     const weekendIds = weekends.map(w=>w.id);
 
+    /* ===============================
+       LOAD RESULTS (NO TEAM JOIN)
+    =============================== */
+
     const results = await RaceResult.findAll({
-      where:{ raceWeekendId: weekendIds },
+      where:{
+        raceWeekendId: weekendIds
+      },
       include:[
         {
-          model:Driver,
-          include:[Team]
+          model: Driver,
+          attributes:["id","firstName","lastName"]
         }
+      ],
+      attributes:[
+        "driverId",
+        "teamId",   // 🔥 IMPORTANT
+        "position"
       ]
     });
+
+    /* ===============================
+       TEAM MAP
+    =============================== */
+
+    const teamsData = await Team.findAll();
+    const teamMap = {};
+
+    teamsData.forEach(t=>{
+      teamMap[t.id] = t.name;
+    });
+
+    console.log("🏎️ TEAM MAP:", teamMap);
 
     const teams = {};
 
     results.forEach(r=>{
 
-      const team = r.Driver.Team.name;
+      // 🔥 USE SNAPSHOT TEAM
+      const teamName = teamMap[r.teamId] || "Unknown";
+
+      console.log("🔍 RESULT DEBUG:",{
+        driver: `${r.Driver.firstName} ${r.Driver.lastName}`,
+        teamId: r.teamId,
+        teamName
+      });
+
       const pos = r.position;
 
-      if(!teams[team]){
-
-        teams[team] = {
-          team,
-          points:0,
+      if(!teams[teamName]){
+        teams[teamName] = {
+          team: teamName,
+          points: 0,
           drivers:{}
         };
-
       }
 
       const pts = POINTS[pos] || 0;
 
-      teams[team].points += pts;
+      teams[teamName].points += pts;
 
       const driverName =
         r.Driver.firstName + " " + r.Driver.lastName;
 
-      if(!teams[team].drivers[driverName])
-        teams[team].drivers[driverName] = 0;
+      if(!teams[teamName].drivers[driverName]){
+        teams[teamName].drivers[driverName] = 0;
+      }
 
-      teams[team].drivers[driverName] += pts;
+      teams[teamName].drivers[driverName] += pts;
 
     });
 
@@ -77,16 +106,15 @@ exports.getConstructors = async (req,res) => {
 
       }));
 
+    console.log("🏆 FINAL CONSTRUCTORS:", table.slice(0,3));
+
     res.json(table);
 
   }
   catch(err){
-
     console.error(err);
     res.status(500).json({message:"Constructor standings error"});
-
   }
-
 };
 
 //==============================
