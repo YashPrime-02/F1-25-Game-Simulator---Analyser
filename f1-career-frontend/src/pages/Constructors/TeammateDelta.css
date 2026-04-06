@@ -1,6 +1,9 @@
+/* ===============================
+   🏁 PAGE BASE
+================================ */
+
 .teammate-page {
   padding: 30px;
-
   color: white;
 
   background:
@@ -18,40 +21,34 @@
 
 .teammate-page h2 {
   font-family: "Orbitron", sans-serif;
-
   margin-bottom: 25px;
-
   letter-spacing: 1px;
-
   color: #e10600;
 
   text-shadow: 0 0 12px rgba(225, 6, 0, 0.7);
 }
 
+/* ===============================
+   🧱 TEAM CARD
+================================ */
+
 .team-card {
   position: relative;
-
   padding: 18px;
-
   margin-bottom: 18px;
-
   border-radius: 14px;
 
   background: linear-gradient(180deg, #1a1a1a, #0a0a0a);
-
   border: 1px solid rgba(255, 255, 255, 0.08);
 
   overflow: hidden;
-
   transition: all 0.35s ease;
 
-  box-shadow:
-    0 10px 25px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
 }
 
 .team-card::before {
   content: "";
-
   position: absolute;
   top: 0;
   left: 0;
@@ -60,69 +57,24 @@
   width: 4px;
 
   background: linear-gradient(180deg, #e10600, #ff3c3c);
-
   box-shadow: 0 0 12px rgba(225, 6, 0, 0.7);
 }
 
 .team-card:hover {
   transform: translateY(-6px) scale(1.01);
-
   box-shadow:
     0 20px 40px rgba(0, 0, 0, 0.8),
     0 0 15px rgba(225, 6, 0, 0.3);
 }
 
-.team-card h3 {
-  font-family: "Orbitron", sans-serif;
 
-  margin-bottom: 10px;
 
-  color: #fff;
+/* ===============================
+   🏁 TEAM COLORS (FULL GRID)
+================================ */
 
-  letter-spacing: 0.5px;
-}
-
-.team-card p {
-  display: flex;
-
-  justify-content: space-between;
-
-  align-items: center;
-
-  margin: 6px 0;
-
-  font-size: 16px;
-
-  color: #ccc;
-}
-
-.driver-points {
-  font-weight: bold;
-
-  color: #9aff02;
-
-  text-shadow: 0 0 8px rgba(154, 255, 2, 0.6);
-}
-
-.delta {
-  display: block;
-
-  margin-top: 10px;
-
-  font-size: 18px;
-
-  font-weight: bold;
-
-  text-align: right;
-
-  color: #e10600;
-
-  text-shadow:
-    0 0 10px rgba(225, 6, 0, 0.8),
-    0 0 20px rgba(225, 6, 0, 0.4);
-}
-
-.team-card.redbull::before {
+.team-card.redbull::before,
+.team-card.redbullracing::before {
   background: #0600ef;
   box-shadow: 0 0 12px #0600ef;
 }
@@ -141,4 +93,374 @@
 
 .team-card.astonmartin::before {
   background: #006f62;
+}
+
+/* 🔥 NEW ONES */
+
+.team-card.alpine::before {
+  background: #0090ff;
+}
+
+.team-card.williams::before {
+  background: #005aff;
+}
+
+.team-card.rb::before {
+  background: #2b4562; /* Visa CashApp RB */
+}
+
+.team-card.haas::before {
+  background: #b6babd;
+}
+
+.team-card.sauber::before {
+  background: #00ff87; /* Stake green */
+}
+
+
+/* ===============================
+   🏁 LEADER ROW TEAM COLORS
+================================ */
+
+.leader-row.redbull {
+  border-left: 3px solid #0600ef;
+}
+
+.leader-row.ferrari {
+  border-left: 3px solid #e10600;
+}
+
+.leader-row.mercedes {
+  border-left: 3px solid #00d2be;
+}
+
+.leader-row.mclaren {
+  border-left: 3px solid #ff8700;
+}
+
+.leader-row.astonmartin {
+  border-left: 3px solid #006f62;
+}
+
+.leader-row.alpine {
+  border-left: 3px solid #0090ff;
+}
+
+.leader-row.williams {
+  border-left: 3px solid #005aff;
+}
+
+.leader-row.rb {
+  border-left: 3px solid #2b4562;
+}
+
+.leader-row.haas {
+  border-left: 3px solid #b6babd;
+}
+
+.leader-row.sauber {
+  border-left: 3px solid #00ff87;
+}
+
+/* ===============================
+   🧾 TEXT
+================================ */
+
+.team-card h3 {
+  font-family: "Orbitron", sans-serif;
+  margin-bottom: 10px;
+  color: #fff;
+}
+
+.team-card p {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin: 6px 0;
+  font-size: 16px;
+  color: #ccc;
+}
+
+.driver-points {
+  font-weight: bold;
+  color: #9aff02;
+
+  text-shadow: 0 0 8px rgba(154, 255, 2, 0.6);
+}
+
+/* ===============================
+   🧠 DRIVER HIERARCHY
+================================ */
+
+.leader {
+  color: #ffffff;
+  transform: scale(1.03);
+}
+
+.loser {
+  opacity: 0.6;
+}
+
+/* ===============================
+   🔥 F1 BATTLE BAR (FINAL)
+================================ */
+
+.battle-bar {
+  position: relative;
+  height: 12px;
+  margin-top: 14px;
+
+  border-radius: 10px;
+  overflow: hidden;
+
+  background: rgba(255,255,255,0.05);
+}
+
+/* gradient split */
+.bar-bg {
+  position: absolute;
+  inset: 0;
+
+  border-radius: 10px;
+
+  box-shadow:
+    inset 0 0 8px rgba(0,0,0,0.6),
+    0 0 6px rgba(255,255,255,0.05);
+
+  transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* outer glow */
+.battle-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  border-radius: 10px;
+
+  box-shadow:
+    0 0 10px rgba(255,255,255,0.08),
+    0 0 20px rgba(255,255,255,0.04);
+
+  pointer-events: none;
+}
+
+/* ===============================
+   🏁 DRIVER INITIALS
+================================ */
+
+.bar-label {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 1px;
+
+  padding: 2px 6px;
+  border-radius: 4px;
+
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+}
+
+.bar-label.left { left: 6px; }
+.bar-label.right { right: 6px; }
+
+/* ===============================
+   🎯 TOOLTIP
+================================ */
+
+.hover-zone {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 50%;
+}
+
+.hover-zone.left { left: 0; }
+.hover-zone.right { right: 0; }
+
+.tooltip {
+  position: absolute;
+  bottom: 140%;
+  left: 10px;
+
+  background: rgba(0,0,0,0.9);
+  color: white;
+
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+
+  opacity: 0;
+  transform: translateY(10px);
+  transition: 0.25s;
+}
+
+.hover-zone:hover .tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===============================
+   ⚔️ CENTER LINE
+================================ */
+
+.clash-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+
+  height: 100%;
+  width: 2px;
+
+  background: rgba(255,255,255,0.2);
+  transform: translateX(-50%);
+}
+
+/* ===============================
+   🚨 DELTA
+================================ */
+
+.delta {
+  display: block;
+  margin-top: 10px;
+
+  font-size: 18px;
+  font-weight: bold;
+  text-align: right;
+
+  color: #e10600;
+
+  text-shadow:
+    0 0 10px rgba(225, 6, 0, 0.8),
+    0 0 20px rgba(225, 6, 0, 0.4);
+}
+
+
+/* ===============================
+   🏁 TEAM LEADERS SECTION
+================================ */
+
+.leaders-section {
+  margin-top: 40px;
+}
+
+.leaders-section h2 {
+  font-family: "Orbitron", sans-serif;
+  margin-bottom: 20px;
+  color: #ffffff;
+
+  text-shadow: 0 0 10px rgba(255,255,255,0.2);
+}
+
+/* ===============================
+   🧾 ROW STYLE (TIMING TOWER)
+================================ */
+
+.leader-row {
+  /* display: grid; */
+  grid-template-columns: 160px 1fr 200px;
+
+  align-items: center;
+
+  padding: 10px 14px;
+  margin-bottom: 8px;
+
+  border-radius: 8px;
+
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+
+  transition: all 0.25s ease;
+}
+
+.leader-row:hover {
+  background: rgba(255,255,255,0.06);
+  transform: translateX(4px);
+}
+
+/* ===============================
+   🏁 TEAM NAME
+================================ */
+
+.leader-team {
+  font-weight: bold;
+  color: #ccc;
+  font-size: 16px;
+}
+
+/* ===============================
+   📊 DOMINANCE BAR
+================================ */
+
+.leader-bar {
+  position: relative;
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.leader-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #919191, #051daf);
+
+  box-shadow:
+    0 0 8px rgba(11, 0, 225, 0.7),
+    0 0 15px rgba(26, 3, 76, 0.3);
+
+  transition: width 0.6s ease;
+}
+
+/* ===============================
+   🧑 DRIVER INFO
+================================ */
+
+.leader-driver {
+  text-align: right;
+  font-weight: bold;
+  color: #fff;
+  font-size: 14px;
+}
+
+.leader-driver span {
+  margin-left: 8px;
+  color: #fe0505;
+}
+
+/* ===============================
+   🏁 TEAM HEADER WITH LOGO
+================================ */
+
+.team-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.team-header img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 4px rgba(255,255,255,0.2));
+}
+
+/* ===============================
+   🏁 LEADER SECTION LOGO
+================================ */
+
+.leader-team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.leader-team img {
+  width: 20px;
+  height: 20px;
 }

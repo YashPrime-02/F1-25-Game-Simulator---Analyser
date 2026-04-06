@@ -90,14 +90,14 @@ export default function Constructors() {
         "https://media.formula1.com/content/dam/fom-website/teams/2024/haas-logo.png",
 
       racingbulls:
-        "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/RB_Formula_One_Team_Logo.svg/512px-RB_Formula_One_Team_Logo.svg.png",
+        "https://media.formula1.com/content/dam/fom-website/teams/2024/rb-logo.png",
       rb:
-        "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/RB_Formula_One_Team_Logo.svg/512px-RB_Formula_One_Team_Logo.svg.png",
+        "https://media.formula1.com/content/dam/fom-website/teams/2024/rb-logo.png",
 
       sauber:
-        "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Stake_F1_Team_Kick_Sauber_logo.svg/512px-Stake_F1_Team_Kick_Sauber_logo.svg.png",
+        "https://media.formula1.com/content/dam/fom-website/teams/2024/kick-sauber-logo.png",
       kicksauber:
-        "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Stake_F1_Team_Kick_Sauber_logo.svg/512px-Stake_F1_Team_Kick_Sauber_logo.svg.png",
+        "https://media.formula1.com/content/dam/fom-website/teams/2024/kick-sauber-logo.png",
     };
 
     return map[teamClass(team)] ||

@@ -371,7 +371,7 @@
 }
 
 .legend-dot.dnf{
-  background:#555;
+  background:#c40000;
 }
 
 /* ===== CHART GRID IMPROVEMENT ===== */
@@ -403,20 +403,4 @@
   display:inline-block;
 
   margin-right:8px;
-}
-
-.legend-dot.win{
-  background:#FFD700;
-}
-
-.legend-dot.podium{
-  background:#00d084;
-}
-
-.legend-dot.points{
-  background:#2b7cff;
-}
-
-.legend-dot.dnf{
-  background:#555;
 }
